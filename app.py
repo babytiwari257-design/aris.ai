@@ -59,7 +59,7 @@ if prompt := st.chat_input("Ask ARIS anything or describe the image..."):
                         ],
                     }
                 ]
-                model_to_use = "llama-3.2-90b-vision-preview"
+                model_to_use = "qwen/qwen3.6-27b"
             else:
                 messages_payload = [
                     {
