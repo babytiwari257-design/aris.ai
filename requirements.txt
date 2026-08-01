@@ -1,3 +1,4 @@
-groq
 streamlit
+groq
 streamlit-mic-recorder
+duckduckgo_search
