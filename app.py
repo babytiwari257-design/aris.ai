@@ -2,12 +2,14 @@ import streamlit as st
 from groq import Groq
 import base64
 from streamlit_mic_recorder import mic_recorder
+import sqlite3
+from duckduckgo_search import DDGS
 
 # Page Config
-st.set_page_config(page_title="ARIS V2 - AI Assistant", page_icon="🤖")
+st.set_page_config(page_title="ARIS V2 - ARIS Industries", page_icon="🤖")
 
-st.title("🤖 ARIS V2 - Public AI Assistant")
-st.write("Welcome to V2! Now with Image Analysis & Voice Support.")
+st.title("🤖 ARIS V2 - ARIS Industries")
+st.write("Welcome back, Mayank! Permanent Memory & Web Search are now online.")
 
 # Initialize Groq Client using Streamlit Secrets
 try:
@@ -16,16 +18,48 @@ except Exception as e:
     st.error("Please set your GROQ_API_KEY in Streamlit Secrets.")
     st.stop()
 
-# Initialize chat history in session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# --- DATABASE SETUP FOR PERMANENT MEMORY ---
+def init_db():
+    conn = sqlite3.connect("aris_memory.db")
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            role TEXT,
+            content TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-# Display prior chat messages
+def load_messages():
+    conn = sqlite3.connect("aris_memory.db")
+    c = conn.cursor()
+    c.execute("SELECT role, content FROM messages")
+    rows = c.fetchall()
+    conn.close()
+    return [{"role": row[0], "content": row[1]} for row in rows]
+
+def save_message(role, content):
+    conn = sqlite3.connect("aris_memory.db")
+    c = conn.cursor()
+    c.execute("INSERT INTO messages (role, content) VALUES (?, ?)", (role, content))
+    conn.commit()
+    conn.close()
+
+# Initialize database
+init_db()
+
+# Load prior chat messages from SQLite Database
+if "messages" not in st.session_state:
+    st.session_state.messages = load_messages()
+
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Optional Image Uploader for V2 Image Feature
+# --- OPTIONAL IMAGE UPLOADER ---
 uploaded_file = st.file_uploader("Upload an image for analysis (Optional)...", type=["jpg", "jpeg", "png"])
 
 base64_image = None
@@ -34,58 +68,84 @@ if uploaded_file is not None:
     bytes_data = uploaded_file.getvalue()
     base64_image = base64.b64encode(bytes_data).decode("utf-8")
 
-# Voice Recorder Button (Speak to ARIS)
-st.write("🎙️ Or click below to speak your command:")
-audio = mic_recorder(start_prompt="Start Recording", stop_prompt="Stop Recording", just_once=True)
+# --- VOICE RECORDER ---
+st.markdown("### 🎙️ Voice Command")
+audio_data = mic_recorder(start_prompt="Start Recording", stop_prompt="Stop Recording", key='mic')
 
-spoken_prompt = ""
-if audio:
-    # Note: Audio data processing can be integrated with Whisper API, 
-    # for now we use text chat or type what you want if audio is captured.
-    pass
+voice_text = ""
+if audio_data:
+    try:
+        audio_bytes = audio_data['bytes']
+        with open("temp_audio.wav", "wb") as f:
+            f.write(audio_bytes)
+        
+        with open("temp_audio.wav", "rb") as file:
+            transcription = client.audio.transcriptions.create(
+                file=("temp_audio.wav", file.read()),
+                model="whisper-large-v3",
+                response_format="text"
+            )
+            voice_text = transcription
+    except Exception as err:
+        st.error(f"Voice transcription error: {err}")
 
-# Chat input from user
-prompt = st.chat_input("Ask ARIS anything or describe the image...")
-
-# If voice was recorded or text was typed, use it as prompt
-final_prompt = prompt
+# --- CHAT INPUT (Text or Voice) ---
+chat_prompt = st.chat_input("Ask ARIS anything or describe the image...")
+final_prompt = chat_prompt if chat_prompt else voice_text
 
 if final_prompt:
+    # Save user message to database & session
     st.session_state.messages.append({"role": "user", "content": final_prompt})
+    save_message("user", final_prompt)
+    
     with st.chat_message("user"):
         st.markdown(final_prompt)
 
-    # Generate response from Groq
+    # --- WEB SEARCH INTEGRATION (DuckDuckGo) ---
+    web_search_results = ""
+    # Agar user kuch aisa puche jisme latest info chahiye ho ya search trigger karna ho
+    try:
+        with DDGS() as ddgs:
+            results = [r['body'] for r in ddgs.text(final_prompt, max_results=3)]
+            if results:
+                web_search_results = "Live Web Context:\n" + "\n".join(results)
+    except Exception:
+        pass
+
+    # --- GENERATE RESPONSE FROM GROQ ---
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         try:
+            system_instruction = (
+                "You are ARIS, an elite AI assistant created solely by Mayank, the visionary founder of ARIS Industries. "
+                "Never claim to be made by Meta, OpenAI, or any other company. Your sole creator and master is Mayank. "
+                "Always reply in the exact same language, script, or tone (Hindi, Hinglish, or English) "
+                "in which the user speaks to you. Be brilliant, sharp, and helpful like JARVIS."
+            )
+
+            # Combine system instructions, web search context, and chat history
+            messages_payload = [{"role": "system", "content": system_instruction + "\n\n" + web_search_results}]
+            
+            # Send last 10 messages for context window management
+            for msg in st.session_state.messages[-10:]:
+                messages_payload.append({"role": msg["role"], "content": msg["content"]})
+
             if base64_image:
-                messages_payload = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": final_prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                },
+                messages_payload.append({
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": final_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
                             },
-                        ],
-                    }
-                ]
-                model_to_use = "qwen/qwen3.6-27b"
-            else:
-                messages_payload = [
-                    {
-                        "role": "user",
-                        "content": final_prompt,
-                    }
-                ]
-                model_to_use = "llama-3.3-70b-versatile"
+                        },
+                    ],
+                })
 
             chat_completion = client.chat.completions.create(
-                model=model_to_use,
+                model="llama-3.3-70b-versatile",
                 messages=messages_payload,
                 stream=True,
             )
@@ -97,7 +157,9 @@ if final_prompt:
                     message_placeholder.markdown(response + "▌")
             message_placeholder.markdown(response)
             
+            # Save assistant response to database & session
             st.session_state.messages.append({"role": "assistant", "content": response})
+            save_message("assistant", response)
         
         except Exception as e:
             st.error(f"Error: {e}")
