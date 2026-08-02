@@ -47,7 +47,7 @@ st.markdown("""
 st.markdown("""
     <div class="main-header">
         <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V2 - ARIS Industries</h1>
-        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Welcome back, Mayank! Multi-Chat History & Web Search systems are active.</p>
+        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Welcome back, User! Multi-Chat History & Web Search systems are active.</p>
     </div>
 """, unsafe_allow_html=True)
 
