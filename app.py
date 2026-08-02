@@ -245,10 +245,14 @@ if final_prompt:
 
                 messages_payload = [{"role": "system", "content": system_instruction + "\n\n" + web_search_results}]
                 
-                # Safely parse past messages to prevent list-to-string 400 error crash
+                # STRICT FIX: Convert every past message content cleanly to string to avoid 400 content type error
                 for msg in current_messages[-10:]:
-                    safe_content = str(msg["content"]) if not isinstance(msg["content"], list) else str(msg["content"][0].get("text", ""))
-                    messages_payload.append({"role": msg["role"], "content": safe_content})
+                    content_val = msg["content"]
+                    if isinstance(content_val, list):
+                        safe_text = " ".join([item.get("text", "") for item in content_val if isinstance(item, dict) and "text" in item])
+                    else:
+                        safe_text = str(content_val)
+                    messages_payload.append({"role": msg["role"], "content": safe_text})
 
                 # Append current prompt with image payload if provided
                 if base64_image:
