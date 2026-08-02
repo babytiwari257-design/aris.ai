@@ -5,11 +5,58 @@ from streamlit_mic_recorder import mic_recorder
 import sqlite3
 from duckduckgo_search import DDGS
 
-# Page Config
-st.set_page_config(page_title="ARIS V2 - ARIS Industries", page_icon="🤖")
+# --- PAGE CONFIGURATION & MODERN COOL THEME ---
+st.set_page_config(
+    page_title="ARIS V2 - ARIS Industries", 
+    page_icon="⚡",
+    layout="centered"
+)
 
-st.title("🤖 ARIS V2 - ARIS Industries")
-st.write("Welcome back, Magnanimous! Permanent Memory & Web Search are now online.")
+# Custom Styling for a Cool, Sleek Look
+st.markdown("""
+    <style>
+    /* Main Background Glow */
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #030712 100%);
+        color: #f8fafc;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Header Styling */
+    .main-header {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        padding: 20px 25px;
+        border-radius: 14px;
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+        margin-bottom: 25px;
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Chat Bubble Enhancements */
+    .stChatMessage {
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 12px;
+        backdrop-filter: blur(5px);
+    }
+
+    /* Sidebar Customization */
+    section[data-testid="stSidebar"] {
+        background-color: #0b0f19;
+        border-right: 1px solid rgba(56, 189, 248, 0.1);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Cool Header Banner
+st.markdown("""
+    <div class="main-header">
+        <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V2 - ARIS Industries</h1>
+        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Welcome back, Magnanimous! Permanent Memory & Web Search systems are active.</p>
+    </div>
+""", unsafe_allow_html=True)
 
 # Initialize Groq Client using Streamlit Secrets
 try:
@@ -61,11 +108,6 @@ init_db()
 if "messages" not in st.session_state:
     st.session_state.messages = load_messages()
 
-# Display chat history
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
 # --- SIDEBAR FOR ARIS CONTROLS, VISION & AUDIO ---
 with st.sidebar:
     st.markdown("### 🎛️ ARIS Controls")
@@ -76,7 +118,7 @@ with st.sidebar:
 
     st.markdown("---")
     # --- OPTIONAL IMAGE UPLOADER ---
-    uploaded_file = st.file_uploader("Upload an image for analysis (Optional)...", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Upload an image for analysis...", type=["jpg", "jpeg", "png"])
 
 base64_image = None
 if uploaded_file is not None:
@@ -105,6 +147,11 @@ if audio_data:
     except Exception as err:
         st.error(f"Voice transcription error: {err}")
 
+# Display chat history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"], avatar="⚡" if message["role"] == "assistant" else "👤"):
+        st.markdown(message["content"])
+
 # --- CHAT INPUT (Text or Voice) ---
 chat_prompt = st.chat_input("Ask ARIS anything or describe the image...")
 final_prompt = chat_prompt if chat_prompt else voice_text
@@ -114,7 +161,7 @@ if final_prompt:
     st.session_state.messages.append({"role": "user", "content": final_prompt})
     save_message("user", final_prompt)
     
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar="👤"):
         st.markdown(final_prompt)
 
     # --- WEB SEARCH INTEGRATION (DuckDuckGo) ---
@@ -128,7 +175,7 @@ if final_prompt:
         pass
 
     # --- GENERATE RESPONSE FROM GROQ (Force English Output) ---
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar="⚡"):
         message_placeholder = st.empty()
         try:
             system_instruction = (
