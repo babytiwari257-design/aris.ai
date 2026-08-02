@@ -6,14 +6,10 @@ import sqlite3
 from duckduckgo_search import DDGS
 
 # Page Config
-st.set_page_config(page_title="ARIS V2 - ARIS Industries", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="ARIS V2 - ARIS Industries", page_icon="🤖")
 
-# Top Header Layout with Title and Wipe Button side-by-side
-col_title, col_btn = st.columns([5, 1])
-
-with col_title:
-    st.title("🤖 ARIS V2 - ARIS Industries")
-    st.write("Welcome back, Magnanimous! Permanent Memory & Web Search are now online.")
+st.title("🤖 ARIS V2 - ARIS Industries")
+st.write("Welcome back, Magnanimous! Permanent Memory & Web Search are now online.")
 
 # Initialize Groq Client using Streamlit Secrets
 try:
@@ -61,22 +57,23 @@ def clear_db():
 # Initialize database
 init_db()
 
-with col_btn:
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-    if st.button("🗑️ Wipe Memory", use_container_width=True):
-        clear_db()
-        st.session_state.messages = []
-        st.rerun()
-
-st.markdown("---")
-
 # Load prior chat messages from SQLite Database
 if "messages" not in st.session_state:
     st.session_state.messages = load_messages()
 
-# --- SIDEBAR FOR VISION & AUDIO ---
+# Display chat history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# --- SIDEBAR FOR ARIS CONTROLS, VISION & AUDIO ---
 with st.sidebar:
     st.markdown("### 🎛️ ARIS Controls")
+    if st.button("🗑️ Wipe Neural Memory", use_container_width=True):
+        clear_db()
+        st.session_state.messages = []
+        st.rerun()
+
     st.markdown("---")
     # --- OPTIONAL IMAGE UPLOADER ---
     uploaded_file = st.file_uploader("Upload an image for analysis (Optional)...", type=["jpg", "jpeg", "png"])
@@ -107,11 +104,6 @@ if audio_data:
             voice_text = transcription
     except Exception as err:
         st.error(f"Voice transcription error: {err}")
-
-# Display chat history
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
 
 # --- CHAT INPUT (Text or Voice) ---
 chat_prompt = st.chat_input("Ask ARIS anything or describe the image...")
