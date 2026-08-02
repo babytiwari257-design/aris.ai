@@ -16,19 +16,15 @@ st.set_page_config(
 # Custom High-End Cyberpunk / JARVIS Theme CSS
 st.markdown("""
     <style>
-    /* Main Background & Fonts */
     .stApp {
         background: radial-gradient(circle at 50% 10%, #0d1117 0%, #010409 100%);
         color: #e6edf3;
         font-family: 'Inter', sans-serif;
     }
-    
-    /* Hide Streamlit Header & Footer */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Futuristic Header Banner */
     .aris-header {
         background: linear-gradient(90deg, rgba(15,23,42,0.8) 0%, rgba(30,41,59,0.9) 100%);
         border: 1px solid rgba(56, 189, 248, 0.3);
@@ -56,7 +52,6 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
 
-    /* Status Badge */
     .status-badge {
         background: rgba(16, 185, 129, 0.15);
         border: 1px solid rgba(16, 185, 129, 0.4);
@@ -84,7 +79,6 @@ st.markdown("""
         100% { transform: scale(0.95); opacity: 0.8; }
     }
 
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: #090d16;
         border-right: 1px solid rgba(56, 189, 248, 0.15);
@@ -104,7 +98,6 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
     }
 
-    /* Chat Messages UI */
     .stChatMessage {
         background: rgba(30, 41, 59, 0.4);
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -123,7 +116,7 @@ except Exception as e:
     st.error("⚠️ Please set your GROQ_API_KEY in Streamlit Secrets.")
     st.stop()
 
-# --- SQLITE DATABASE SETUP FOR PERSISTENT MEMORY ---
+# --- SQLITE DATABASE SETUP ---
 def init_db():
     conn = sqlite3.connect("aris_memory.db")
     c = conn.cursor()
@@ -161,7 +154,6 @@ def clear_db():
 
 init_db()
 
-# --- LOAD CHAT HISTORY INTO SESSION STATE ---
 if "messages" not in st.session_state:
     st.session_state.messages = load_messages()
 
@@ -171,7 +163,6 @@ with st.sidebar:
     st.markdown("<p style='color: #64748b; font-size: 12px;'>Founder: Mayank | Core: Llama 3.3</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # Clear Memory Option
     if st.button("🗑️ Wipe Neural Memory", use_container_width=True):
         clear_db()
         st.session_state.messages = []
@@ -208,7 +199,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- PROCESS VOICE AUDIO IF RECORDED ---
 voice_text = ""
 if audio_data:
     try:
@@ -236,14 +226,13 @@ chat_prompt = st.chat_input("Enter command or query for ARIS...")
 final_prompt = chat_prompt if chat_prompt else voice_text
 
 if final_prompt:
-    # Save user message to database & session
     st.session_state.messages.append({"role": "user", "content": final_prompt})
     save_message("user", final_prompt)
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(final_prompt)
 
-    # --- LIVE WEB SEARCH INTEGRATION (DuckDuckGo) ---
+    # --- LIVE WEB SEARCH INTEGRATION ---
     web_search_results = ""
     try:
         with DDGS() as ddgs:
@@ -257,17 +246,18 @@ if final_prompt:
     with st.chat_message("assistant", avatar="⚡"):
         message_placeholder = st.empty()
         try:
+            # System instruction configured to FORCE English-only output
             system_instruction = (
                 "You are ARIS, an elite, hyper-intelligent futuristic AI assistant created solely by Mayank, "
                 "the visionary founder of ARIS Industries. Never claim to be built by Meta, OpenAI, or any other corporation. "
-                "Your supreme master and creator is Mayank. Always reply in the exact language, script, or tone "
-                "(Hindi, Hinglish, or English) used by the user. Be brilliant, sharp, commanding, and extremely helpful like JARVIS."
+                "Your supreme master and creator is Mayank. "
+                "CRITICAL RULE: Regardless of the language, script, or phrasing the user uses to ask their question "
+                "(even if they use Hindi, Hinglish, or any other language), you MUST ALWAYS respond EXCLUSIVELY in clear, "
+                "professional English. Be brilliant, sharp, commanding, and extremely helpful like JARVIS."
             )
 
-            # Build messages payload with memory context & live search info
             messages_payload = [{"role": "system", "content": system_instruction + "\n\n" + web_search_results}]
             
-            # Context management (last 10 messages)
             for msg in st.session_state.messages[-10:]:
                 messages_payload.append({"role": msg["role"], "content": msg["content"]})
 
@@ -298,7 +288,6 @@ if final_prompt:
                     message_placeholder.markdown(response + "▌")
             message_placeholder.markdown(response)
             
-            # Save assistant response to database & session
             st.session_state.messages.append({"role": "assistant", "content": response})
             save_message("assistant", response)
         
