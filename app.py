@@ -13,13 +13,16 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- HIDE STREAMLIT BRANDING, FORK & GITHUB ICON ---
+# --- CLEAN UI & PRIVACY STYLE (Keeping Sidebar Toggle Visible) ---
 hide_streamlit_style = """
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     .stDeployButton {display:none;}
+    /* Hide only the top-right GitHub/Fork toolbar items, keep the sidebar button */
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
