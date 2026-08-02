@@ -199,7 +199,11 @@ current_messages = load_session_messages(st.session_state.current_session_id)
 
 for message in current_messages:
     with st.chat_message(message["role"], avatar="⚡" if message["role"] == "assistant" else "👤"):
-        st.markdown(message["content"])
+        # Safely render text even if legacy content was stored incorrectly
+        content_to_show = message["content"]
+        if isinstance(content_to_show, list):
+            content_to_show = " ".join([str(item.get("text", "")) for item in content_to_show if isinstance(item, dict)])
+        st.markdown(str(content_to_show))
 
 chat_prompt = st.chat_input("Ask ARIS anything or describe the image...")
 final_prompt = chat_prompt if chat_prompt else voice_text
@@ -245,14 +249,20 @@ if final_prompt:
 
                 messages_payload = [{"role": "system", "content": system_instruction + "\n\n" + web_search_results}]
                 
-                # STRICT FIX: Convert every past message content cleanly to string to avoid 400 content type error
+                # FOOLPROOF STRING SANITIZATION FOR PAST MESSAGES
                 for msg in current_messages[-10:]:
-                    content_val = msg["content"]
-                    if isinstance(content_val, list):
-                        safe_text = " ".join([item.get("text", "") for item in content_val if isinstance(item, dict) and "text" in item])
+                    c_val = msg["content"]
+                    if isinstance(c_val, list):
+                        extracted_text = ""
+                        for item in c_val:
+                            if isinstance(item, dict) and "text" in item:
+                                extracted_text += str(item["text"]) + " "
+                        safe_text = extracted_text.strip() if extracted_text else "User uploaded an image."
                     else:
-                        safe_text = str(content_val)
-                    messages_payload.append({"role": msg["role"], "content": safe_text})
+                        safe_text = str(c_val) if c_val else ""
+                    
+                    if safe_text:
+                        messages_payload.append({"role": msg["role"], "content": safe_text})
 
                 # Append current prompt with image payload if provided
                 if base64_image:
