@@ -13,19 +13,22 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- CLEAN UI & PRIVACY STYLE (Keeping Sidebar Toggle Visible) ---
-hide_streamlit_style = """
+# --- TARGETED PRIVACY: HIDE GITHUB/FORK ONLY, KEEP ARIS CONTROLS INTACT ---
+hide_github_style = """
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
-    /* Hide only the top-right GitHub/Fork toolbar items, keep the sidebar button */
-    header[data-testid="stHeader"] {
-        background: transparent;
+    /* Hides the top right GitHub icon and fork buttons precisely */
+    [data-testid="stToolbar"] {
+        display: none !important;
+    }
+    header {
+        background: transparent !important;
     }
     </style>
 """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.markdown(hide_github_style, unsafe_allow_html=True)
 
 # Custom Styling for a Cool, Sleek Look
 st.markdown("""
@@ -298,3 +301,4 @@ if final_prompt:
             
             except Exception as e:
                 st.error(f"Error: {e}")
+
