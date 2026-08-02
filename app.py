@@ -8,10 +8,21 @@ import uuid
 
 # --- PAGE CONFIGURATION & MODERN COOL THEME ---
 st.set_page_config(
-    page_title="ARIS V2 - ARIS Industries", 
+    page_title="ARIS V3 - ARIS Industries", 
     page_icon="⚡",
     layout="centered"
 )
+
+# --- HIDE STREAMLIT BRANDING, FORK & GITHUB ICON ---
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display:none;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Custom Styling for a Cool, Sleek Look
 st.markdown("""
@@ -46,8 +57,8 @@ st.markdown("""
 
 st.markdown("""
     <div class="main-header">
-        <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V2 - ARIS Industries</h1>
-        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Welcome back, User! Multi-Chat History & Web Search systems are active.</p>
+        <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V3 - ARIS Industries</h1>
+        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Welcome back, User! Secure Multi-Modal & Web Search systems are active.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -158,10 +169,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 💬 Chat History")
     
-    # Display previous chat sessions list
     current_sessions = get_all_sessions()
     for sid, title in current_sessions:
-        is_active = (sid == st.session_state.current_session_id)
         btn_label = f"📍 {title[:22]}..." if len(title) > 22 else f"💬 {title}"
         if st.button(btn_label, key=sid, use_container_width=True):
             st.session_state.current_session_id = sid
@@ -207,7 +216,6 @@ chat_prompt = st.chat_input("Ask ARIS anything or describe the image...")
 final_prompt = chat_prompt if chat_prompt else voice_text
 
 if final_prompt:
-    # If it's the first message in this chat, update session title based on prompt
     if len(current_messages) == 0:
         update_session_title(st.session_state.current_session_id, final_prompt[:30])
 
@@ -248,10 +256,12 @@ if final_prompt:
 
                 messages_payload = [{"role": "system", "content": system_instruction + "\n\n" + web_search_results}]
                 
+                # Safely parse past messages to prevent list-to-string 400 error crash
                 for msg in current_messages[-10:]:
-                    messages_payload.append({"role": msg["role"], "content": msg["content"]})
-                messages_payload.append({"role": "user", "content": final_prompt})
+                    safe_content = str(msg["content"]) if not isinstance(msg["content"], list) else str(msg["content"][0].get("text", ""))
+                    messages_payload.append({"role": msg["role"], "content": safe_content})
 
+                # Append current prompt with image payload if provided
                 if base64_image:
                     messages_payload.append({
                         "role": "user",
@@ -265,6 +275,8 @@ if final_prompt:
                             },
                         ],
                     })
+                else:
+                    messages_payload.append({"role": "user", "content": final_prompt})
 
                 chat_completion = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
