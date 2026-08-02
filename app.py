@@ -5,118 +5,24 @@ from streamlit_mic_recorder import mic_recorder
 import sqlite3
 from duckduckgo_search import DDGS
 
-# --- PAGE CONFIGURATION & CYBERPUNK THEME ---
-st.set_page_config(
-    page_title="ARIS V2 - Advanced AI Core", 
-    page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Page Config
+st.set_page_config(page_title="ARIS V2 - ARIS Industries", page_icon="🤖", layout="wide")
 
-# Custom High-End Cyberpunk / JARVIS Theme CSS
-st.markdown("""
-    <style>
-    .stApp {
-        background: radial-gradient(circle at 50% 10%, #0d1117 0%, #010409 100%);
-        color: #e6edf3;
-        font-family: 'Inter', sans-serif;
-    }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+# Top Header Layout with Title and Wipe Button side-by-side
+col_title, col_btn = st.columns([5, 1])
 
-    .aris-header {
-        background: linear-gradient(90deg, rgba(15,23,42,0.8) 0%, rgba(30,41,59,0.9) 100%);
-        border: 1px solid rgba(56, 189, 248, 0.3);
-        padding: 20px 30px;
-        border-radius: 12px;
-        box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 25px;
-    }
-    .aris-title {
-        font-size: 28px;
-        font-weight: 800;
-        background: linear-gradient(45deg, #38bdf8, #818cf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: 1px;
-        margin: 0;
-    }
-    .aris-subtitle {
-        color: #94a3b8;
-        font-size: 13px;
-        margin-top: 4px;
-        letter-spacing: 0.5px;
-    }
+with col_title:
+    st.title("🤖 ARIS V2 - ARIS Industries")
+    st.write("Welcome back, Magnanimous! Permanent Memory & Web Search are now online.")
 
-    .status-badge {
-        background: rgba(16, 185, 129, 0.15);
-        border: 1px solid rgba(16, 185, 129, 0.4);
-        color: #34d399;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
-    }
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        background-color: #34d399;
-        border-radius: 50%;
-        box-shadow: 0 0 8px #34d399;
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0.8; }
-        50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 12px #34d399; }
-        100% { transform: scale(0.95); opacity: 0.8; }
-    }
-
-    section[data-testid="stSidebar"] {
-        background-color: #090d16;
-        border-right: 1px solid rgba(56, 189, 248, 0.15);
-    }
-    section[data-testid="stSidebar"] .stButton button {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border: 1px solid rgba(56, 189, 248, 0.3);
-        color: #38bdf8;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    section[data-testid="stSidebar"] .stButton button:hover {
-        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-        color: #ffffff;
-        border-color: #38bdf8;
-        box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
-    }
-
-    .stChatMessage {
-        background: rgba(30, 41, 59, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 12px;
-        backdrop-filter: blur(10px);
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- INITIALIZE GROQ CLIENT ---
+# Initialize Groq Client using Streamlit Secrets
 try:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 except Exception as e:
-    st.error("⚠️ Please set your GROQ_API_KEY in Streamlit Secrets.")
+    st.error("Please set your GROQ_API_KEY in Streamlit Secrets.")
     st.stop()
 
-# --- SQLITE DATABASE SETUP ---
+# --- DATABASE SETUP FOR PERMANENT MEMORY ---
 def init_db():
     conn = sqlite3.connect("aris_memory.db")
     c = conn.cursor()
@@ -152,52 +58,38 @@ def clear_db():
     conn.commit()
     conn.close()
 
+# Initialize database
 init_db()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = load_messages()
-
-# --- SIDEBAR CONTROL PANEL ---
-with st.sidebar:
-    st.markdown("### 🎛️ ARIS COMMAND CENTER")
-    st.markdown("<p style='color: #64748b; font-size: 12px;'>Founder: Mayank | Core: Llama 3.3</p>", unsafe_allow_html=True)
-    st.markdown("---")
-    
-    if st.button("🗑️ Wipe Neural Memory", use_container_width=True):
+with col_btn:
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    if st.button("🗑️ Wipe Memory", use_container_width=True):
         clear_db()
         st.session_state.messages = []
         st.rerun()
 
-    st.markdown("---")
-    st.markdown("### 👁️ Vision Core")
-    uploaded_file = st.file_uploader("Upload Image for Analysis", type=["jpg", "jpeg", "png"])
-    
-    base64_image = None
-    if uploaded_file is not None:
-        st.image(uploaded_file, caption="Target Visual Loaded", use_column_width=True)
-        bytes_data = uploaded_file.getvalue()
-        base64_image = base64.b64encode(bytes_data).decode("utf-8")
+st.markdown("---")
 
-    st.markdown("---")
-    st.markdown("### 🎙️ Audio Input")
-    st.markdown("<p style='font-size: 11px; color: #94a3b8;'>Record direct vocal transmissions:</p>", unsafe_allow_html=True)
-    audio_data = mic_recorder(start_prompt="🔴 Start Recording", stop_prompt="⏹️ Stop Recording", key='mic')
+# Load prior chat messages from SQLite Database
+if "messages" not in st.session_state:
+    st.session_state.messages = load_messages()
 
-# --- MAIN HEADER INTERFACE ---
-st.markdown("""
-    <div class="aris-header">
-        <div>
-            <div class="aris-title">⚡ ARIS V2 - AI CORE</div>
-            <div class="aris-subtitle">Welcome back, Mayank. Permanent Memory, Neural Vision & Live Web Engines are fully operational.</div>
-        </div>
-        <div>
-            <div class="status-badge">
-                <div class="status-dot"></div>
-                SYSTEMS ONLINE
-            </div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+# --- SIDEBAR FOR VISION & AUDIO ---
+with st.sidebar:
+    st.markdown("### 🎛️ ARIS Controls")
+    st.markdown("---")
+    # --- OPTIONAL IMAGE UPLOADER ---
+    uploaded_file = st.file_uploader("Upload an image for analysis (Optional)...", type=["jpg", "jpeg", "png"])
+
+base64_image = None
+if uploaded_file is not None:
+    st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+    bytes_data = uploaded_file.getvalue()
+    base64_image = base64.b64encode(bytes_data).decode("utf-8")
+
+# --- VOICE RECORDER ---
+st.markdown("### 🎙️ Voice Command")
+audio_data = mic_recorder(start_prompt="Start Recording", stop_prompt="Stop Recording", key='mic')
 
 voice_text = ""
 if audio_data:
@@ -216,23 +108,24 @@ if audio_data:
     except Exception as err:
         st.error(f"Voice transcription error: {err}")
 
-# --- DISPLAY CHAT HISTORY ---
+# Display chat history
 for message in st.session_state.messages:
-    with st.chat_message(message["role"], avatar="⚡" if message["role"] == "assistant" else "👤"):
+    with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- CHAT INPUT INTERFACE ---
-chat_prompt = st.chat_input("Enter command or query for ARIS...")
+# --- CHAT INPUT (Text or Voice) ---
+chat_prompt = st.chat_input("Ask ARIS anything or describe the image...")
 final_prompt = chat_prompt if chat_prompt else voice_text
 
 if final_prompt:
+    # Save user message to database & session
     st.session_state.messages.append({"role": "user", "content": final_prompt})
     save_message("user", final_prompt)
     
-    with st.chat_message("user", avatar="👤"):
+    with st.chat_message("user"):
         st.markdown(final_prompt)
 
-    # --- LIVE WEB SEARCH INTEGRATION ---
+    # --- WEB SEARCH INTEGRATION (DuckDuckGo) ---
     web_search_results = ""
     try:
         with DDGS() as ddgs:
@@ -242,22 +135,22 @@ if final_prompt:
     except Exception:
         pass
 
-    # --- GENERATE STREAMING RESPONSE FROM GROQ ---
-    with st.chat_message("assistant", avatar="⚡"):
+    # --- GENERATE RESPONSE FROM GROQ (Force English Output) ---
+    with st.chat_message("assistant"):
         message_placeholder = st.empty()
         try:
-            # System instruction configured to FORCE English-only output
             system_instruction = (
-                "You are ARIS, an elite, hyper-intelligent futuristic AI assistant created solely by Mayank, "
-                "the visionary founder of ARIS Industries. Never claim to be built by Meta, OpenAI, or any other corporation. "
-                "Your supreme master and creator is Mayank. "
-                "CRITICAL RULE: Regardless of the language, script, or phrasing the user uses to ask their question "
-                "(even if they use Hindi, Hinglish, or any other language), you MUST ALWAYS respond EXCLUSIVELY in clear, "
-                "professional English. Be brilliant, sharp, commanding, and extremely helpful like JARVIS."
+                "You are ARIS, an elite AI assistant created solely by Magnanimous, the visionary founder of ARIS Industries. "
+                "Never claim to be made by Meta, OpenAI, or any other company. Your sole creator and master is Magnanimous. "
+                "CRITICAL RULE: Regardless of the language or phrasing the user uses to ask their question "
+                "(even if they use Hindi or Hinglish), you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
+                "Be brilliant, sharp, and helpful like JARVIS."
             )
 
+            # Combine system instructions, web search context, and chat history
             messages_payload = [{"role": "system", "content": system_instruction + "\n\n" + web_search_results}]
             
+            # Send last 10 messages for context window management
             for msg in st.session_state.messages[-10:]:
                 messages_payload.append({"role": msg["role"], "content": msg["content"]})
 
@@ -288,8 +181,9 @@ if final_prompt:
                     message_placeholder.markdown(response + "▌")
             message_placeholder.markdown(response)
             
+            # Save assistant response to database & session
             st.session_state.messages.append({"role": "assistant", "content": response})
             save_message("assistant", response)
         
         except Exception as e:
-            st.error(f"Neural Core Error: {e}")
+            st.error(f"Error: {e}")
