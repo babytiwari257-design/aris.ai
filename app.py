@@ -10,36 +10,44 @@ import io
 import sys
 import chromadb
 
-# --- PAGE CONFIGURATION & ULTRA-FUTURISTIC THEME ---
+# --- PAGE CONFIGURATION & CYBER-MATRIX THEME ---
 st.set_page_config(
-    page_title="ARIS V5.2 Elite - ARIS Industries", 
+    page_title="ARIS V6 Cyber-Matrix - ARIS Industries", 
     page_icon="⚡",
-    layout="centered"
+    layout="wide"
 )
 
 st.markdown("""
     <style>
     .stApp {
-        background: radial-gradient(circle at center, #090d16 0%, #030712 100%);
+        background: radial-gradient(circle at center, #050b14 0%, #020408 100%);
         color: #f8fafc;
         font-family: 'Inter', sans-serif;
     }
     .main-header {
-        background: rgba(15, 23, 42, 0.7);
+        background: rgba(15, 23, 42, 0.8);
         border: 1px solid rgba(56, 189, 248, 0.4);
-        padding: 22px 28px;
-        border-radius: 16px;
-        box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+        padding: 24px 30px;
+        border-radius: 18px;
+        box-shadow: 0 0 35px rgba(56, 189, 248, 0.2);
         margin-bottom: 25px;
-        backdrop-filter: blur(12px);
+        backdrop-filter: blur(14px);
+    }
+    .hud-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        padding: 18px;
+        border-radius: 14px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        margin-bottom: 15px;
     }
     .stChatMessage {
         background: rgba(30, 41, 59, 0.5);
-        border: 1px solid rgba(56, 189, 248, 0.15);
+        border: 1px solid rgba(56, 189, 248, 0.2);
         border-radius: 14px;
         padding: 14px;
         backdrop-filter: blur(8px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
     .code-sandbox-output {
         background-color: #020617;
@@ -49,10 +57,10 @@ st.markdown("""
         font-family: 'Courier New', monospace;
         color: #38bdf8;
         margin-top: 12px;
-        box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.1);
+        box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.15);
     }
     section[data-testid="stSidebar"] {
-        background-color: #050811;
+        background-color: #030712;
         border-right: 1px solid rgba(56, 189, 248, 0.2);
     }
     .stButton>button {
@@ -71,10 +79,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- HEADER DASHBOARD ---
 st.markdown("""
     <div class="main-header">
-        <h1 style="margin: 0; font-size: 28px; background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V5.2 Elite Terminal</h1>
-        <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | VECTOR VAULT & FORCE-SEARCH ONLINE</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin: 0; font-size: 30px; background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS AI ASSISTANT</h1>
+                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | CYBER-MATRIX v6.0 ONLINE</p>
+            </div>
+            <div style="text-align: right;">
+                <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">🟢 CORE STATUS: ONLINE</span>
+            </div>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -84,7 +100,7 @@ except Exception as e:
     st.error("Please set your GROQ_API_KEY in Streamlit Secrets.")
     st.stop()
 
-# --- CHROMADB & SQLITE SETUP ---
+# --- DATABASE SETUP ---
 @st.cache_resource
 def init_vector_vault():
     try:
@@ -97,7 +113,7 @@ def init_vector_vault():
 memory_collection = init_vector_vault()
 
 def init_db():
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, title TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT)')
@@ -108,16 +124,16 @@ def init_db():
 init_db()
 
 def get_all_sessions():
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT session_id, title FROM sessions ORDER BY rowid DESC")
     rows = c.fetchall()
     conn.close()
     return rows
 
-def create_new_session(title="Main Protocol"):
+def create_new_session(title="Cyber Protocol"):
     session_id = str(uuid.uuid4())
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO sessions (session_id, title) VALUES (?, ?)", (session_id, title))
     conn.commit()
@@ -125,7 +141,7 @@ def create_new_session(title="Main Protocol"):
     return session_id
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT role, content FROM messages WHERE session_id = ?", (session_id,))
     rows = c.fetchall()
@@ -133,21 +149,21 @@ def load_session_messages(session_id):
     return [{"role": row[0], "content": row[1]} for row in rows]
 
 def save_message_to_db(session_id, role, content):
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
     conn.commit()
     conn.close()
 
 def update_session_title(session_id, new_title):
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (new_title, session_id))
     conn.commit()
     conn.close()
 
 def delete_session(session_id):
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
@@ -155,7 +171,7 @@ def delete_session(session_id):
     conn.close()
 
 def add_memory(fact):
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO long_term_memory (fact) VALUES (?)", (fact,))
     conn.commit()
@@ -171,7 +187,7 @@ def add_memory(fact):
             pass
 
 def get_all_memories():
-    conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT fact FROM long_term_memory")
     rows = c.fetchall()
@@ -181,15 +197,15 @@ def get_all_memories():
 # --- SESSION STATE ---
 sessions = get_all_sessions()
 if not sessions:
-    create_new_session("Main Protocol")
+    create_new_session("Cyber Protocol")
     sessions = get_all_sessions()
 
 if "current_session_id" not in st.session_state or st.session_state.current_session_id not in [s[0] for s in sessions]:
     st.session_state.current_session_id = sessions[0][0]
 
-# --- SIDEBAR HUD ---
+# --- SIDEBAR HUD CONTROLS ---
 with st.sidebar:
-    st.markdown("### 🎛️ ARIS Core Controls")
+    st.markdown("### 🎛️ ARIS Command Center")
     
     if st.button("➕ New Neural Thread", use_container_width=True):
         new_id = create_new_session("New Session")
@@ -202,7 +218,7 @@ with st.sidebar:
         if remaining:
             st.session_state.current_session_id = remaining[0][0]
         else:
-            st.session_state.current_session_id = create_new_session("Main Protocol")
+            st.session_state.current_session_id = create_new_session("Cyber Protocol")
         st.rerun()
 
     st.markdown("---")
@@ -231,7 +247,7 @@ extracted_pdf_text = ""
 if uploaded_file is not None:
     ext = uploaded_file.name.split('.')[-1].lower()
     if ext in ["jpg", "jpeg", "png"]:
-        st.sidebar.image(uploaded_file, caption="Visual Attachment", use_column_width=True)
+        st.sidebar.image(uploaded_file, caption="Visual Matrix Upload", use_column_width=True)
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
     elif ext == "pdf":
         st.sidebar.success(f"PDF Linked: {uploaded_file.name}")
@@ -259,6 +275,17 @@ if audio_data:
     except Exception as err:
         st.error(f"Audio error: {err}")
 
+# --- DASHBOARD METRICS HUD ---
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#38bdf8; font-size:14px;">🤖 ACTIVE MODEL</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">LLaMA-3.3 70B</p></div>', unsafe_allow_html=True)
+with col2:
+    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#818cf8; font-size:14px;">🌐 LIVE WEB MATRIX</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">Active (2026)</p></div>', unsafe_allow_html=True)
+with col3:
+    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#c084fc; font-size:14px;">🔒 ENCRYPTION</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">Secured</p></div>', unsafe_allow_html=True)
+
+st.markdown("---")
+
 # Load messages
 current_messages = load_session_messages(st.session_state.current_session_id)
 for msg in current_messages:
@@ -268,7 +295,7 @@ for msg in current_messages:
             c_show = " ".join([str(item.get("text", "")) for item in c_show if isinstance(item, dict)])
         st.markdown(str(c_show))
 
-chat_prompt = st.chat_input("Enter command, query live data, or test code sandbox...")
+chat_prompt = st.chat_input("Enter command, query live matrix, or test code sandbox...")
 final_prompt = chat_prompt if chat_prompt else voice_text
 
 if extracted_pdf_text and final_prompt:
@@ -323,7 +350,7 @@ if final_prompt:
             message_placeholder = st.empty()
             try:
                 system_instruction = (
-                    "You are ARIS V5.2 Elite, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
+                    "You are ARIS V6 Cyber-Matrix, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
                     "Never claim to be made by Meta, OpenAI, Google, or any other entity. Your sole creator and master is Mayank. "
                     "CRITICAL RULE: You have direct real-time access to live web search data provided in your context. Never claim you have a knowledge cutoff or lack real-time access when live web context is present. Always utilize the provided live web research data to answer queries about current events, news, and live facts. "
                     "CRITICAL LANGUAGE RULE: Regardless of the language or phrasing used by the user, you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
