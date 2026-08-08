@@ -5,15 +5,19 @@ from streamlit_mic_recorder import mic_recorder
 import sqlite3
 from duckduckgo_search import DDGS
 import uuid
+import pypdf
+import io
+import sys
+import contextlib
 
 # --- PAGE CONFIGURATION & MODERN COOL THEME ---
 st.set_page_config(
-    page_title="ARIS V3 - ARIS Industries", 
+    page_title="ARIS Ultimate - ARIS Industries", 
     page_icon="⚡",
     layout="centered"
 )
 
-# Custom Styling for a Cool, Sleek Look
+# Custom Styling for a Sleek, Futuristic Look
 st.markdown("""
     <style>
     .stApp {
@@ -26,7 +30,7 @@ st.markdown("""
         border: 1px solid rgba(56, 189, 248, 0.2);
         padding: 20px 25px;
         border-radius: 14px;
-        box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+        box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
         margin-bottom: 25px;
         backdrop-filter: blur(10px);
     }
@@ -37,6 +41,15 @@ st.markdown("""
         padding: 12px;
         backdrop-filter: blur(5px);
     }
+    .code-sandbox-output {
+        background-color: #030712;
+        border: 1px solid #38bdf8;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: monospace;
+        color: #38bdf8;
+        margin-top: 10px;
+    }
     section[data-testid="stSidebar"] {
         background-color: #0b0f19;
         border-right: 1px solid rgba(56, 189, 248, 0.1);
@@ -46,8 +59,8 @@ st.markdown("""
 
 st.markdown("""
     <div class="main-header">
-        <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V3 - ARIS Industries</h1>
-        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Welcome back, User! Secure Multi-Modal & Web Search systems are active.</p>
+        <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS Ultimate Enterprise</h1>
+        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Created by Mayank. Memory Vault, Deep Research & Python Sandbox Fully Active.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -57,9 +70,9 @@ except Exception as e:
     st.error("Please set your GROQ_API_KEY in Streamlit Secrets.")
     st.stop()
 
-# --- SQLITE DATABASE SETUP FOR MULTI-CHAT HISTORY ---
+# --- SQLITE DATABASE SETUP (Multi-chat & Long-Term Memory) ---
 def init_db():
-    conn = sqlite3.connect("aris_multichat.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS sessions (
@@ -76,13 +89,19 @@ def init_db():
             FOREIGN KEY (session_id) REFERENCES sessions (session_id)
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS long_term_memory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fact TEXT
+        )
+    ''')
     conn.commit()
     conn.close()
 
 init_db()
 
 def get_all_sessions():
-    conn = sqlite3.connect("aris_multichat.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT session_id, title FROM sessions ORDER BY rowid DESC")
     rows = c.fetchall()
@@ -91,7 +110,7 @@ def get_all_sessions():
 
 def create_new_session(title="New Chat"):
     session_id = str(uuid.uuid4())
-    conn = sqlite3.connect("aris_multichat.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO sessions (session_id, title) VALUES (?, ?)", (session_id, title))
     conn.commit()
@@ -99,7 +118,7 @@ def create_new_session(title="New Chat"):
     return session_id
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect("aris_multichat.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT role, content FROM messages WHERE session_id = ?", (session_id,))
     rows = c.fetchall()
@@ -107,39 +126,55 @@ def load_session_messages(session_id):
     return [{"role": row[0], "content": row[1]} for row in rows]
 
 def save_message_to_db(session_id, role, content):
-    conn = sqlite3.connect("aris_multichat.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
     conn.commit()
     conn.close()
 
 def update_session_title(session_id, new_title):
-    conn = sqlite3.connect("aris_multichat.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (new_title, session_id))
     conn.commit()
     conn.close()
 
 def delete_session(session_id):
-    conn = sqlite3.connect("aris_multichat.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
     conn.commit()
     conn.close()
 
-# --- SESSION STATE MANAGEMENT FOR CHATS ---
+# Long-term memory helpers
+def add_memory(fact):
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    c = conn.cursor()
+    c.execute("INSERT INTO long_term_memory (fact) VALUES (?)", (fact,))
+    conn.commit()
+    conn.close()
+
+def get_all_memories():
+    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    c = conn.cursor()
+    c.execute("SELECT fact FROM long_term_memory")
+    rows = c.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
+
+# --- SESSION STATE MANAGEMENT ---
 sessions = get_all_sessions()
 if not sessions:
-    initial_id = create_new_session("Welcome Chat")
+    create_new_session("Welcome Chat")
     sessions = get_all_sessions()
 
 if "current_session_id" not in st.session_state or st.session_state.current_session_id not in [s[0] for s in sessions]:
     st.session_state.current_session_id = sessions[0][0]
 
-# --- SIDEBAR FOR CHAT HISTORY & CONTROLS ---
+# --- SIDEBAR CONTROLS ---
 with st.sidebar:
-    st.markdown("### 🎛️ ARIS Controls")
+    st.markdown("### 🎛️ ARIS Enterprise Controls")
     
     if st.button("➕ New Chat Thread", use_container_width=True):
         new_id = create_new_session("New Chat")
@@ -156,126 +191,138 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
+    st.markdown("### 🧠 Long-Term Memory Vault")
+    memories = get_all_memories()
+    if memories:
+        for m in memories[-5:]:
+            st.caption(f"📌 {m}")
+    else:
+        st.caption("No permanent memory stored yet.")
+
+    st.markdown("---")
     st.markdown("### 💬 Chat History")
-    
-    current_sessions = get_all_sessions()
-    for sid, title in current_sessions:
-        btn_label = f"📍 {title[:22]}..." if len(title) > 22 else f"💬 {title}"
+    for sid, title in get_all_sessions():
+        btn_label = f"📍 {title[:20]}..." if len(title) > 20 else f"💬 {title}"
         if st.button(btn_label, key=sid, use_container_width=True):
             st.session_state.current_session_id = sid
             st.rerun()
 
     st.markdown("---")
-    uploaded_file = st.file_uploader("Upload an image for analysis...", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Upload Image or PDF", type=["jpg", "jpeg", "png", "pdf"])
 
+# File Attachments Handling
 base64_image = None
+extracted_pdf_text = ""
 if uploaded_file is not None:
-    st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
-    bytes_data = uploaded_file.getvalue()
-    base64_image = base64.b64encode(bytes_data).decode("utf-8")
+    ext = uploaded_file.name.split('.')[-1].lower()
+    if ext in ["jpg", "jpeg", "png"]:
+        st.sidebar.image(uploaded_file, caption="Attached Image", use_column_width=True)
+        base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
+    elif ext == "pdf":
+        st.sidebar.success(f"PDF Attached: {uploaded_file.name}")
+        try:
+            reader = pypdf.PdfReader(io.BytesIO(uploaded_file.getvalue()))
+            for page in reader.pages:
+                t = page.extract_text()
+                if t: extracted_pdf_text += t + "\n"
+        except Exception as e:
+            st.sidebar.error(f"PDF Error: {e}")
 
 st.markdown("### 🎙️ Voice Command")
 audio_data = mic_recorder(start_prompt="Start Recording", stop_prompt="Stop Recording", key='mic')
-
 voice_text = ""
 if audio_data:
     try:
-        audio_bytes = audio_data['bytes']
         with open("temp_audio.wav", "wb") as f:
-            f.write(audio_bytes)
-        
+            f.write(audio_data['bytes'])
         with open("temp_audio.wav", "rb") as file:
-            transcription = client.audio.transcriptions.create(
+            voice_text = client.audio.transcriptions.create(
                 file=("temp_audio.wav", file.read()),
                 model="whisper-large-v3",
                 response_format="text"
             )
-            voice_text = transcription
     except Exception as err:
-        st.error(f"Voice transcription error: {err}")
+        st.error(f"Voice error: {err}")
 
-# Load messages for the active session
+# Load messages
 current_messages = load_session_messages(st.session_state.current_session_id)
+for msg in current_messages:
+    with st.chat_message(msg["role"], avatar="⚡" if msg["role"] == "assistant" else "👤"):
+        c_show = msg["content"]
+        if isinstance(c_show, list):
+            c_show = " ".join([str(item.get("text", "")) for item in c_show if isinstance(item, dict)])
+        st.markdown(str(c_show))
 
-for message in current_messages:
-    with st.chat_message(message["role"], avatar="⚡" if message["role"] == "assistant" else "👤"):
-        # Safely render text even if legacy content was stored incorrectly
-        content_to_show = message["content"]
-        if isinstance(content_to_show, list):
-            content_to_show = " ".join([str(item.get("text", "")) for item in content_to_show if isinstance(item, dict)])
-        st.markdown(str(content_to_show))
-
-chat_prompt = st.chat_input("Ask ARIS anything or describe the image...")
+chat_prompt = st.chat_input("Ask ARIS, request code execution, or deep research...")
 final_prompt = chat_prompt if chat_prompt else voice_text
+
+if extracted_pdf_text and final_prompt:
+    final_prompt = f"Extracted PDF Content:\n---\n{extracted_pdf_text[:4000]}\n---\n\nPrompt: {final_prompt}"
 
 if final_prompt:
     if len(current_messages) == 0:
         update_session_title(st.session_state.current_session_id, final_prompt[:30])
 
     save_message_to_db(st.session_state.current_session_id, "user", final_prompt)
-    
     with st.chat_message("user", avatar="👤"):
-        st.markdown(final_prompt)
+        st.markdown(chat_prompt if chat_prompt else final_prompt)
 
-    prompt_lower = final_prompt.lower()
-    creator_keywords = ["creator", "who made you", "who built you", "kisne banaya", "tumhe kisne banaya", "owner", "founder"]
-    is_creator_query = any(kw in prompt_lower for kw in creator_keywords)
-
-    if is_creator_query:
+    # Creator check
+    if any(kw in final_prompt.lower() for kw in ["creator", "who made you", "who built you", "kisne banaya"]):
         response = "I was created solely by Mayank, the visionary founder of ARIS Industries."
         with st.chat_message("assistant", avatar="⚡"):
             st.markdown(response)
         save_message_to_db(st.session_state.current_session_id, "assistant", response)
     else:
-        web_search_results = ""
-        try:
-            with DDGS() as ddgs:
-                results = [r['body'] for r in ddgs.text(final_prompt, max_results=3)]
-                if results:
-                    web_search_results = "Live Web Context:\n" + "\n".join(results)
-        except Exception:
-            pass
+        # --- FEATURE 2: AUTONOMOUS DEEP RESEARCH AGENT ---
+        web_context = ""
+        if any(w in final_prompt.lower() for w in ["search", "research", "latest", "news", "find"]):
+            with st.status("🔍 ARIS Autonomous Agent executing deep web analysis...", expanded=True) as status:
+                try:
+                    with DDGS() as ddgs:
+                        results = [r['body'] for r in ddgs.text(final_prompt, max_results=5)]
+                        if results:
+                            web_context = "Autonomous Deep Research Findings:\n" + "\n".join([f"- {res}" for res in results])
+                    status.update(label="✅ Deep Research Complete!", state="complete", expanded=False)
+                except Exception:
+                    status.update(label="⚠️ Research search skipped.", state="error")
+        else:
+            try:
+                with DDGS() as ddgs:
+                    results = [r['body'] for r in ddgs.text(final_prompt, max_results=2)]
+                    if results:
+                        web_context = "Live Web Context:\n" + "\n".join(results)
+            except Exception:
+                pass
+
+        # --- FEATURE 1: LONG-TERM MEMORY INJECTION ---
+        all_memories = get_all_memories()
+        memory_context = "User Long-Term Permanent Vault:\n" + "\n".join([f"- {m}" for m in all_memories]) if all_memories else ""
 
         with st.chat_message("assistant", avatar="⚡"):
             message_placeholder = st.empty()
             try:
                 system_instruction = (
-                    "You are ARIS, an elite AI assistant created solely by Mayank, the visionary founder of ARIS Industries. "
+                    "You are ARIS Ultimate Enterprise, an elite AI assistant created solely by Mayank, the visionary founder of ARIS Industries. "
                     "Never claim to be made by Meta, OpenAI, or any other company. Your sole creator and master is Mayank. "
-                    "CRITICAL RULE: Regardless of the language or phrasing the user uses to ask their question "
-                    "(even if they use Hindi or Hinglish), you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
+                    "CRITICAL RULE: Regardless of the language or phrasing used by the user, you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
                     "Be brilliant, sharp, and helpful like JARVIS."
                 )
 
-                messages_payload = [{"role": "system", "content": system_instruction + "\n\n" + web_search_results}]
+                messages_payload = [{"role": "system", "content": f"{system_instruction}\n\n{memory_context}\n\n{web_context}"}]
                 
-                # FOOLPROOF STRING SANITIZATION FOR PAST MESSAGES
                 for msg in current_messages[-10:]:
                     c_val = msg["content"]
-                    if isinstance(c_val, list):
-                        extracted_text = ""
-                        for item in c_val:
-                            if isinstance(item, dict) and "text" in item:
-                                extracted_text += str(item["text"]) + " "
-                        safe_text = extracted_text.strip() if extracted_text else "User uploaded an image."
-                    else:
-                        safe_text = str(c_val) if c_val else ""
-                    
+                    safe_text = " ".join([str(i.get("text", "")) for i in c_val if isinstance(i, dict)]) if isinstance(c_val, list) else str(c_val or "")
                     if safe_text:
                         messages_payload.append({"role": msg["role"], "content": safe_text})
 
-                # Append current prompt with image payload if provided
                 if base64_image:
                     messages_payload.append({
                         "role": "user",
                         "content": [
                             {"type": "text", "text": final_prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                },
-                            },
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
                         ],
                     })
                 else:
@@ -295,6 +342,33 @@ if final_prompt:
                 message_placeholder.markdown(response)
                 
                 save_message_to_db(st.session_state.current_session_id, "assistant", response)
+
+                # Capture permanent memory if user command specifies
+                if "remember that" in final_prompt.lower() or "store this" in final_prompt.lower():
+                    add_memory(final_prompt)
+                    st.toast("🧠 Saved permanently to Memory Vault!", icon="⚡")
+
+                # --- FEATURE 3: IN-APP PYTHON CODE EXECUTION SANDBOX ---
+                if "```python" in response:
+                    try:
+                        code_block = response.split("```python")[1].split("```")[0].strip()
+                        if code_block:
+                            st.markdown("### 💻 In-App Python Code Execution Sandbox Output:")
+                            old_stdout = sys.stdout
+                            new_stdout = io.StringIO()
+                            sys.stdout = new_stdout
+                            
+                            exec(code_block, {})
+                            
+                            sys.stdout = old_stdout
+                            execution_output = new_stdout.getvalue()
+                            
+                            if execution_output:
+                                st.markdown(f'<div class="code-sandbox-output">{execution_output}</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown('<div class="code-sandbox-output">Code executed successfully with zero print output.</div>', unsafe_allow_html=True)
+                    except Exception as sandbox_err:
+                        pass
             
             except Exception as e:
                 st.error(f"Error: {e}")
