@@ -8,16 +8,15 @@ import uuid
 import pypdf
 import io
 import sys
-import contextlib
+import chromadb
 
-# --- PAGE CONFIGURATION & MODERN COOL THEME ---
+# --- PAGE CONFIGURATION & THEME ---
 st.set_page_config(
-    page_title="ARIS Ultimate - ARIS Industries", 
+    page_title="ARIS V5 Ultimate - ARIS Industries", 
     page_icon="⚡",
     layout="centered"
 )
 
-# Custom Styling for a Sleek, Futuristic Look
 st.markdown("""
     <style>
     .stApp {
@@ -59,8 +58,8 @@ st.markdown("""
 
 st.markdown("""
     <div class="main-header">
-        <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS Ultimate Enterprise</h1>
-        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Created by Mayank. Memory Vault, Deep Research & Python Sandbox Fully Active.</p>
+        <h1 style="margin: 0; font-size: 26px; background: linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V5 Ultimate Enterprise</h1>
+        <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 13px;">Created by Mayank. Vector Vault, Python Sandbox & Deep Research Active.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -70,38 +69,31 @@ except Exception as e:
     st.error("Please set your GROQ_API_KEY in Streamlit Secrets.")
     st.stop()
 
-# --- SQLITE DATABASE SETUP (Multi-chat & Long-Term Memory) ---
+# --- CHROMADB & SQLITE SETUP ---
+@st.cache_resource
+def init_vector_vault():
+    try:
+        chroma_client = chromadb.PersistentClient(path="./aris_vector_db")
+        collection = chroma_client.get_or_create_collection("aris_memory_vault")
+        return collection
+    except Exception:
+        return None
+
+memory_collection = init_vector_vault()
+
 def init_db():
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS sessions (
-            session_id TEXT PRIMARY KEY,
-            title TEXT
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id TEXT,
-            role TEXT,
-            content TEXT,
-            FOREIGN KEY (session_id) REFERENCES sessions (session_id)
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS long_term_memory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            fact TEXT
-        )
-    ''')
+    c.execute('CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, title TEXT)')
+    c.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT)')
+    c.execute('CREATE TABLE IF NOT EXISTS long_term_memory (id INTEGER PRIMARY KEY AUTOINCREMENT, fact TEXT)')
     conn.commit()
     conn.close()
 
 init_db()
 
 def get_all_sessions():
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT session_id, title FROM sessions ORDER BY rowid DESC")
     rows = c.fetchall()
@@ -110,7 +102,7 @@ def get_all_sessions():
 
 def create_new_session(title="New Chat"):
     session_id = str(uuid.uuid4())
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO sessions (session_id, title) VALUES (?, ?)", (session_id, title))
     conn.commit()
@@ -118,7 +110,7 @@ def create_new_session(title="New Chat"):
     return session_id
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT role, content FROM messages WHERE session_id = ?", (session_id,))
     rows = c.fetchall()
@@ -126,44 +118,52 @@ def load_session_messages(session_id):
     return [{"role": row[0], "content": row[1]} for row in rows]
 
 def save_message_to_db(session_id, role, content):
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
     conn.commit()
     conn.close()
 
 def update_session_title(session_id, new_title):
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (new_title, session_id))
     conn.commit()
     conn.close()
 
 def delete_session(session_id):
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
     conn.commit()
     conn.close()
 
-# Long-term memory helpers
 def add_memory(fact):
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO long_term_memory (fact) VALUES (?)", (fact,))
     conn.commit()
     conn.close()
+    
+    if memory_collection:
+        try:
+            memory_collection.add(
+                documents=[fact],
+                ids=[str(uuid.uuid4())]
+            )
+        except Exception:
+            pass
 
 def get_all_memories():
-    conn = sqlite3.connect("aris_ultimate_enterprise.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v5_enterprise.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT fact FROM long_term_memory")
     rows = c.fetchall()
     conn.close()
     return [r[0] for r in rows]
 
-# --- SESSION STATE MANAGEMENT ---
+# --- SESSION STATE ---
 sessions = get_all_sessions()
 if not sessions:
     create_new_session("Welcome Chat")
@@ -172,9 +172,9 @@ if not sessions:
 if "current_session_id" not in st.session_state or st.session_state.current_session_id not in [s[0] for s in sessions]:
     st.session_state.current_session_id = sessions[0][0]
 
-# --- SIDEBAR CONTROLS ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("### 🎛️ ARIS Enterprise Controls")
+    st.markdown("### 🎛️ ARIS V5 Controls")
     
     if st.button("➕ New Chat Thread", use_container_width=True):
         new_id = create_new_session("New Chat")
@@ -191,7 +191,7 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 🧠 Long-Term Memory Vault")
+    st.markdown("### 🧠 Vector Memory Vault")
     memories = get_all_memories()
     if memories:
         for m in memories[-5:]:
@@ -210,7 +210,7 @@ with st.sidebar:
     st.markdown("---")
     uploaded_file = st.file_uploader("Upload Image or PDF", type=["jpg", "jpeg", "png", "pdf"])
 
-# File Attachments Handling
+# File Attachments
 base64_image = None
 extracted_pdf_text = ""
 if uploaded_file is not None:
@@ -253,7 +253,7 @@ for msg in current_messages:
             c_show = " ".join([str(item.get("text", "")) for item in c_show if isinstance(item, dict)])
         st.markdown(str(c_show))
 
-chat_prompt = st.chat_input("Ask ARIS, request code execution, or deep research...")
+chat_prompt = st.chat_input("Ask ARIS V5, trigger sandbox, or run research...")
 final_prompt = chat_prompt if chat_prompt else voice_text
 
 if extracted_pdf_text and final_prompt:
@@ -274,42 +274,44 @@ if final_prompt:
             st.markdown(response)
         save_message_to_db(st.session_state.current_session_id, "assistant", response)
     else:
-        # --- FEATURE 2: AUTONOMOUS DEEP RESEARCH AGENT ---
+        # Check permanent memory storage commands
+        if "remember" in final_prompt.lower() or "store" in final_prompt.lower() or "save" in final_prompt.lower():
+            add_memory(final_prompt)
+            st.toast("🧠 Saved permanently to Vector Memory Vault!", icon="⚡")
+
+        # Autonomous Web Research Integration
         web_context = ""
-        if any(w in final_prompt.lower() for w in ["search", "research", "latest", "news", "find"]):
-            with st.status("🔍 ARIS Autonomous Agent executing deep web analysis...", expanded=True) as status:
-                try:
-                    with DDGS() as ddgs:
-                        results = [r['body'] for r in ddgs.text(final_prompt, max_results=5)]
-                        if results:
-                            web_context = "Autonomous Deep Research Findings:\n" + "\n".join([f"- {res}" for res in results])
-                    status.update(label="✅ Deep Research Complete!", state="complete", expanded=False)
-                except Exception:
-                    status.update(label="⚠️ Research search skipped.", state="error")
-        else:
+        try:
+            with DDGS() as ddgs:
+                results = [r['body'] for r in ddgs.text(final_prompt, max_results=3)]
+                if results:
+                    web_context = "Live Web Context:\n" + "\n".join(results)
+        except Exception:
+            pass
+
+        # Fetch relevant memories from Chroma vector store
+        relevant_memories = ""
+        if memory_collection:
             try:
-                with DDGS() as ddgs:
-                    results = [r['body'] for r in ddgs.text(final_prompt, max_results=2)]
-                    if results:
-                        web_context = "Live Web Context:\n" + "\n".join(results)
+                results = memory_collection.query(query_texts=[final_prompt], n_results=3)
+                if results and results.get('documents'):
+                    flat_docs = [doc for sublist in results['documents'] for doc in sublist]
+                    if flat_docs:
+                        relevant_memories = "Retrieved Vector Memories:\n" + "\n".join([f"- {d}" for d in flat_docs])
             except Exception:
                 pass
-
-        # --- FEATURE 1: LONG-TERM MEMORY INJECTION ---
-        all_memories = get_all_memories()
-        memory_context = "User Long-Term Permanent Vault:\n" + "\n".join([f"- {m}" for m in all_memories]) if all_memories else ""
 
         with st.chat_message("assistant", avatar="⚡"):
             message_placeholder = st.empty()
             try:
                 system_instruction = (
-                    "You are ARIS Ultimate Enterprise, an elite AI assistant created solely by Mayank, the visionary founder of ARIS Industries. "
+                    "You are ARIS V5 Ultimate Enterprise, an elite AI assistant created solely by Mayank, the visionary founder of ARIS Industries. "
                     "Never claim to be made by Meta, OpenAI, or any other company. Your sole creator and master is Mayank. "
                     "CRITICAL RULE: Regardless of the language or phrasing used by the user, you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
                     "Be brilliant, sharp, and helpful like JARVIS."
                 )
 
-                messages_payload = [{"role": "system", "content": f"{system_instruction}\n\n{memory_context}\n\n{web_context}"}]
+                messages_payload = [{"role": "system", "content": f"{system_instruction}\n\n{relevant_memories}\n\n{web_context}"}]
                 
                 for msg in current_messages[-10:]:
                     c_val = msg["content"]
@@ -343,17 +345,12 @@ if final_prompt:
                 
                 save_message_to_db(st.session_state.current_session_id, "assistant", response)
 
-                # Capture permanent memory if user command specifies
-                if "remember that" in final_prompt.lower() or "store this" in final_prompt.lower():
-                    add_memory(final_prompt)
-                    st.toast("🧠 Saved permanently to Memory Vault!", icon="⚡")
-
-                # --- FEATURE 3: IN-APP PYTHON CODE EXECUTION SANDBOX ---
+                # In-App Python Sandbox Runner
                 if "```python" in response:
                     try:
                         code_block = response.split("```python")[1].split("```")[0].strip()
                         if code_block:
-                            st.markdown("### 💻 In-App Python Code Execution Sandbox Output:")
+                            st.markdown("### 💻 In-App Python Sandbox Execution Output:")
                             old_stdout = sys.stdout
                             new_stdout = io.StringIO()
                             sys.stdout = new_stdout
