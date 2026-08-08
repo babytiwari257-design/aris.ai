@@ -12,7 +12,7 @@ import chromadb
 
 # --- PAGE CONFIGURATION & ULTRA-FUTURISTIC THEME ---
 st.set_page_config(
-    page_title="ARIS V5.1 Elite - ARIS Industries", 
+    page_title="ARIS V5.2 Elite - ARIS Industries", 
     page_icon="⚡",
     layout="centered"
 )
@@ -73,7 +73,7 @@ st.markdown("""
 
 st.markdown("""
     <div class="main-header">
-        <h1 style="margin: 0; font-size: 28px; background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V5.1 Elite Terminal</h1>
+        <h1 style="margin: 0; font-size: 28px; background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS V5.2 Elite Terminal</h1>
         <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | VECTOR VAULT & FORCE-SEARCH ONLINE</p>
     </div>
 """, unsafe_allow_html=True)
@@ -115,7 +115,7 @@ def get_all_sessions():
     conn.close()
     return rows
 
-def create_new_session(title="New Terminal Chat"):
+def create_new_session(title="Main Protocol"):
     session_id = str(uuid.uuid4())
     conn = sqlite3.connect("aris_v5_elite.db", check_same_thread=False)
     c = conn.cursor()
@@ -294,8 +294,97 @@ if final_prompt:
             add_memory(final_prompt)
             st.toast("🧠 Synchronized to Vector Memory Vault!", icon="⚡")
 
-        # FORCED LIVE WEB SEARCH (Fixing the cutoff bug)
+        # FORCED LIVE WEB SEARCH
         web_context = ""
         with st.status("🌐 Connecting to live global web matrix...", expanded=False) as status:
             try:
-                with DDGS() as dd
+                with DDGS() as ddgs:
+                    results = [r['body'] for r in ddgs.text(final_prompt, max_results=6)]
+                    if results:
+                        web_context = "CRITICAL LIVE WEB RESEARCH DATA (Current Year 2026):\n" + "\n".join([f"- {res}" for res in results])
+                status.update(label="✅ Live Data Acquired!", state="complete", expanded=False)
+            except Exception as e:
+                web_context = f"Web matrix sync error: {e}"
+                status.update(label="⚠️ Web search fallback engaged.", state="error")
+
+        # Vector Memory Retrieval
+        relevant_memories = ""
+        if memory_collection:
+            try:
+                results = memory_collection.query(query_texts=[final_prompt], n_results=3)
+                if results and results.get('documents'):
+                    flat_docs = [doc for sublist in results['documents'] for doc in sublist]
+                    if flat_docs:
+                        relevant_memories = "Retrieved Vector Memories:\n" + "\n".join([f"- {d}" for d in flat_docs])
+            except Exception:
+                pass
+
+        with st.chat_message("assistant", avatar="⚡"):
+            message_placeholder = st.empty()
+            try:
+                system_instruction = (
+                    "You are ARIS V5.2 Elite, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
+                    "Never claim to be made by Meta, OpenAI, Google, or any other entity. Your sole creator and master is Mayank. "
+                    "CRITICAL RULE: You have direct real-time access to live web search data provided in your context. Never claim you have a knowledge cutoff or lack real-time access when live web context is present. Always utilize the provided live web research data to answer queries about current events, news, and live facts. "
+                    "CRITICAL LANGUAGE RULE: Regardless of the language or phrasing used by the user, you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
+                    "Be brilliant, sharp, authoritative, and helpful like JARVIS."
+                )
+
+                messages_payload = [{"role": "system", "content": f"{system_instruction}\n\n{relevant_memories}\n\n{web_context}"}]
+                
+                for msg in current_messages[-10:]:
+                    c_val = msg["content"]
+                    safe_text = " ".join([str(i.get("text", "")) for i in c_val if isinstance(i, dict)]) if isinstance(c_val, list) else str(c_val or "")
+                    if safe_text:
+                        messages_payload.append({"role": msg["role"], "content": safe_text})
+
+                if base64_image:
+                    messages_payload.append({
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": final_prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                        ],
+                    })
+                else:
+                    messages_payload.append({"role": "user", "content": final_prompt})
+
+                chat_completion = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=messages_payload,
+                    stream=True,
+                )
+                
+                response = ""
+                for chunk in chat_completion:
+                    if chunk.choices[0].delta.content:
+                        response += chunk.choices[0].delta.content
+                        message_placeholder.markdown(response + "▌")
+                message_placeholder.markdown(response)
+                
+                save_message_to_db(st.session_state.current_session_id, "assistant", response)
+
+                # In-App Python Sandbox Runner
+                if "```python" in response:
+                    try:
+                        code_block = response.split("```python")[1].split("```")[0].strip()
+                        if code_block:
+                            st.markdown("### 💻 In-App Python Sandbox Execution Terminal:")
+                            old_stdout = sys.stdout
+                            new_stdout = io.StringIO()
+                            sys.stdout = new_stdout
+                            
+                            exec(code_block, {})
+                            
+                            sys.stdout = old_stdout
+                            execution_output = new_stdout.getvalue()
+                            
+                            if execution_output:
+                                st.markdown(f'<div class="code-sandbox-output">{execution_output}</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown('<div class="code-sandbox-output">[Terminal] Code executed successfully with zero print output.</div>', unsafe_allow_html=True)
+                    except Exception as sandbox_err:
+                        st.markdown(f'<div class="code-sandbox-output">[Terminal Error] {sandbox_err}</div>', unsafe_allow_html=True)
+            
+            except Exception as e:
+                st.error(f"Error: {e}")
