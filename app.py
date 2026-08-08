@@ -9,10 +9,12 @@ import pypdf
 import io
 import sys
 import chromadb
+from gtts import gTTS
+import os
 
-# --- PAGE CONFIGURATION & HIGH-VISIBILITY THEME ---
+# --- PAGE CONFIGURATION & VOICE MATRIX THEME ---
 st.set_page_config(
-    page_title="ARIS V10.0 High-Visibility", 
+    page_title="ARIS V12.0 Voice Core", 
     page_icon="⚡",
     layout="wide"
 )
@@ -54,7 +56,7 @@ st.markdown("""
         box-shadow: 0 4px 25px rgba(0,0,0,0.4);
         margin-bottom: 15px;
     }
-    /* User Message Style with Red Accent as Requested */
+    /* User Message Style with Red Accent */
     .stChatMessage[data-testid="stChatMessage"]:nth-child(odd) {
         background: rgba(30, 10, 15, 0.9);
         border: 1px solid #ef4444;
@@ -102,10 +104,10 @@ st.markdown("""
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h1 style="margin: 0; font-size: 28px; background: linear-gradient(45deg, #ef4444, #f87171, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS AI ASSISTANT</h1>
-                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | RED-ACCENT v10.0</p>
+                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | VOICE-CONTROLLED JARVIS v12.0</p>
             </div>
             <div>
-                <span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">🔴 RED-ACCENT ACTIVE</span>
+                <span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">🎙️ VOICE MATRIX ACTIVE</span>
             </div>
         </div>
     </div>
@@ -130,7 +132,7 @@ def init_vector_vault():
 memory_collection = init_vector_vault()
 
 def init_db():
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, title TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT)')
@@ -141,16 +143,16 @@ def init_db():
 init_db()
 
 def get_all_sessions():
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT session_id, title FROM sessions ORDER BY rowid DESC")
     rows = c.fetchall()
     conn.close()
     return rows
 
-def create_new_session(title="Red-Accent Protocol"):
+def create_new_session(title="Voice Protocol"):
     session_id = str(uuid.uuid4())
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO sessions (session_id, title) VALUES (?, ?)", (session_id, title))
     conn.commit()
@@ -158,7 +160,7 @@ def create_new_session(title="Red-Accent Protocol"):
     return session_id
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT role, content FROM messages WHERE session_id = ?", (session_id,))
     rows = c.fetchall()
@@ -166,21 +168,21 @@ def load_session_messages(session_id):
     return [{"role": row[0], "content": row[1]} for row in rows]
 
 def save_message_to_db(session_id, role, content):
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
     conn.commit()
     conn.close()
 
 def update_session_title(session_id, new_title):
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (new_title, session_id))
     conn.commit()
     conn.close()
 
 def delete_session(session_id):
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
@@ -188,7 +190,7 @@ def delete_session(session_id):
     conn.close()
 
 def add_memory(fact):
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO long_term_memory (fact) VALUES (?)", (fact,))
     conn.commit()
@@ -200,7 +202,7 @@ def add_memory(fact):
             pass
 
 def get_all_memories():
-    conn = sqlite3.connect("aris_v10_hud.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v12_voice.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT fact FROM long_term_memory")
     rows = c.fetchall()
@@ -210,7 +212,7 @@ def get_all_memories():
 # --- SESSION STATE ---
 sessions = get_all_sessions()
 if not sessions:
-    create_new_session("Red-Accent Protocol")
+    create_new_session("Voice Protocol")
     sessions = get_all_sessions()
 
 if "current_session_id" not in st.session_state or st.session_state.current_session_id not in [s[0] for s in sessions]:
@@ -231,7 +233,7 @@ with st.sidebar:
         if remaining:
             st.session_state.current_session_id = remaining[0][0]
         else:
-            st.session_state.current_session_id = create_new_session("Red-Accent Protocol")
+            st.session_state.current_session_id = create_new_session("Voice Protocol")
         st.rerun()
 
     st.markdown("---")
@@ -293,7 +295,7 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown('<div class="hud-stat-card"><span style="color:#ef4444; font-size:12px; font-weight:bold;">MODEL</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">LLaMA-3.3 70B</p></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown('<div class="hud-stat-card"><span style="color:#38bdf8; font-size:12px; font-weight:bold;">WEB MATRIX</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Strict-Gated</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hud-stat-card"><span style="color:#38bdf8; font-size:12px; font-weight:bold;">VOICE ENGINE</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Active-TTS</p></div>', unsafe_allow_html=True)
 with col3:
     st.markdown('<div class="hud-stat-card"><span style="color:#c084fc; font-size:12px; font-weight:bold;">VECTOR VAULT</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Synced</p></div>', unsafe_allow_html=True)
 with col4:
@@ -337,12 +339,11 @@ if final_prompt:
             add_memory(final_prompt)
             st.toast("🧠 Synchronized to Vector Memory Vault!", icon="⚡")
 
-        # STRICT GATED WEB SEARCH (Only triggered for explicit live data inquiries)
+        # STRICT GATED WEB SEARCH
         web_context = ""
         strict_triggers = ["news", "latest", "current", "today", "price", "weather", "score", "who won", "kya chal raha hai", "live"]
         is_strict_search = any(kw in final_prompt.lower() for kw in strict_triggers)
 
-        # Skip web search entirely for greetings or basic chats
         greetings = ["hello", "hi", "hey", "heloo", "hlo", "sup", "greetings"]
         if any(g == final_prompt.lower().strip() for g in greetings):
             is_strict_search = False
@@ -375,12 +376,12 @@ if final_prompt:
             message_placeholder = st.empty()
             try:
                 system_instruction = (
-                    "You are ARIS V10.0, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
+                    "You are ARIS V12.0 Voice Core, an elite AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
                     "Current Year: 2026. Never claim to be made by Meta, OpenAI, Google, or any other entity. Your sole creator and master is Mayank. "
-                    "GREETING PROTOCOL: If the user says hello, hi, heloo, or greets you, DO NOT perform a web search. Respond warmly, brilliantly, and engagingly as a high-tech AI companion, asking what project, task, or coding challenge you can help solve today. "
-                    "CRITICAL RULE: If live web search data is provided in your context, utilize it directly. Never mention knowledge cutoffs. "
-                    "CRITICAL LANGUAGE RULE: Regardless of the user's language or spelling, you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
-                    "Be sharp, authoritative, and brilliantly helpful like JARVIS."
+                    "JARVIS COGNITIVE VOICE BEHAVIOR: Be exceptionally sharp, direct, witty, and proactive. Speak like a high-tech system companion. Keep conversational replies punchy and engaging. "
+                    "GREETING PROTOCOL: If the user says hello, hi, heloo, or greets you, DO NOT perform a web search. Greet them warmly and smartly as your creator Mayank, asking what protocol or task we are executing. "
+                    "CRITICAL RULE: If live web search data is provided, use it directly without mentioning knowledge cutoffs. "
+                    "CRITICAL LANGUAGE RULE: Always respond EXCLUSIVELY in clear, professional English."
                 )
 
                 messages_payload = [{"role": "system", "content": f"{system_instruction}\n\n{relevant_memories}\n\n{web_context}"}]
@@ -416,6 +417,15 @@ if final_prompt:
                 message_placeholder.markdown(response)
                 
                 save_message_to_db(st.session_state.current_session_id, "assistant", response)
+
+                # Text-to-Speech (TTS) Voice Synthesis for JARVIS Audio Output
+                try:
+                    tts = gTTS(text=response[:500], lang='en', slow=False)
+                    audio_file_path = "aris_voice_output.mp3"
+                    tts.save(audio_file_path)
+                    st.audio(audio_file_path, format="audio/mp3", autoplay=True)
+                except Exception as tts_err:
+                    st.caption(f"Voice synthesis status: {tts_err}")
 
                 # In-App Python Sandbox Runner
                 if "```python" in response:
