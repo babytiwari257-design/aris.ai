@@ -12,7 +12,7 @@ import chromadb
 
 # --- PAGE CONFIGURATION & CYBER-MATRIX THEME ---
 st.set_page_config(
-    page_title="ARIS", 
+    page_title="ARIS V8.0 Cyber-HUD Elite", 
     page_icon="⚡",
     layout="wide"
 )
@@ -20,34 +20,39 @@ st.set_page_config(
 st.markdown("""
     <style>
     .stApp {
-        background: radial-gradient(circle at center, #050b14 0%, #020408 100%);
+        background: radial-gradient(circle at center, #030712 0%, #010204 100%);
         color: #f8fafc;
         font-family: 'Inter', sans-serif;
     }
     .main-header {
-        background: rgba(15, 23, 42, 0.8);
+        background: rgba(15, 23, 42, 0.85);
         border: 1px solid rgba(56, 189, 248, 0.4);
-        padding: 24px 30px;
-        border-radius: 18px;
-        box-shadow: 0 0 35px rgba(56, 189, 248, 0.2);
-        margin-bottom: 25px;
+        padding: 22px 28px;
+        border-radius: 16px;
+        box-shadow: 0 0 30px rgba(56, 189, 248, 0.15);
+        margin-bottom: 20px;
         backdrop-filter: blur(14px);
     }
-    .hud-card {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(56, 189, 248, 0.2);
-        padding: 18px;
-        border-radius: 14px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    .hud-stat-card {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         backdrop-filter: blur(10px);
-        margin-bottom: 15px;
     }
     .stChatMessage {
-        background: rgba(30, 41, 59, 0.5);
-        border: 1px solid rgba(56, 189, 248, 0.2);
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(56, 189, 248, 0.3);
         border-radius: 14px;
-        padding: 14px;
-        backdrop-filter: blur(8px);
+        padding: 16px;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #f1f5f9;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        margin-bottom: 12px;
     }
     .code-sandbox-output {
         background-color: #020617;
@@ -60,7 +65,7 @@ st.markdown("""
         box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.15);
     }
     section[data-testid="stSidebar"] {
-        background-color: #030712;
+        background-color: #020408;
         border-right: 1px solid rgba(56, 189, 248, 0.2);
     }
     .stButton>button {
@@ -84,11 +89,11 @@ st.markdown("""
     <div class="main-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h1 style="margin: 0; font-size: 30px; background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS AI ASSISTANT</h1>
-                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | V7.0 ELITE ONLINE</p>
+                <h1 style="margin: 0; font-size: 28px; background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS AI ASSISTANT</h1>
+                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | CYBER-HUD v8.0</p>
             </div>
-            <div style="text-align: right;">
-                <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">🟢 CORE STATUS: ONLINE</span>
+            <div>
+                <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">🟢 CORE ONLINE</span>
             </div>
         </div>
     </div>
@@ -113,7 +118,7 @@ def init_vector_vault():
 memory_collection = init_vector_vault()
 
 def init_db():
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, title TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT)')
@@ -124,16 +129,16 @@ def init_db():
 init_db()
 
 def get_all_sessions():
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT session_id, title FROM sessions ORDER BY rowid DESC")
     rows = c.fetchall()
     conn.close()
     return rows
 
-def create_new_session(title="Elite Protocol"):
+def create_new_session(title="Cyber HUD Session"):
     session_id = str(uuid.uuid4())
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO sessions (session_id, title) VALUES (?, ?)", (session_id, title))
     conn.commit()
@@ -141,7 +146,7 @@ def create_new_session(title="Elite Protocol"):
     return session_id
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT role, content FROM messages WHERE session_id = ?", (session_id,))
     rows = c.fetchall()
@@ -149,21 +154,21 @@ def load_session_messages(session_id):
     return [{"role": row[0], "content": row[1]} for row in rows]
 
 def save_message_to_db(session_id, role, content):
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
     conn.commit()
     conn.close()
 
 def update_session_title(session_id, new_title):
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (new_title, session_id))
     conn.commit()
     conn.close()
 
 def delete_session(session_id):
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
@@ -171,23 +176,19 @@ def delete_session(session_id):
     conn.close()
 
 def add_memory(fact):
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO long_term_memory (fact) VALUES (?)", (fact,))
     conn.commit()
     conn.close()
-    
     if memory_collection:
         try:
-            memory_collection.add(
-                documents=[fact],
-                ids=[str(uuid.uuid4())]
-            )
+            memory_collection.add(documents=[fact], ids=[str(uuid.uuid4())])
         except Exception:
             pass
 
 def get_all_memories():
-    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v8_hud.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT fact FROM long_term_memory")
     rows = c.fetchall()
@@ -197,7 +198,7 @@ def get_all_memories():
 # --- SESSION STATE ---
 sessions = get_all_sessions()
 if not sessions:
-    create_new_session("Elite Protocol")
+    create_new_session("Cyber HUD Session")
     sessions = get_all_sessions()
 
 if "current_session_id" not in st.session_state or st.session_state.current_session_id not in [s[0] for s in sessions]:
@@ -218,11 +219,11 @@ with st.sidebar:
         if remaining:
             st.session_state.current_session_id = remaining[0][0]
         else:
-            st.session_state.current_session_id = create_new_session("Elite Protocol")
+            st.session_state.current_session_id = create_new_session("Cyber HUD Session")
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 🧠 Vector Memory Vault")
+    st.markdown("### 🧠 Memory Vault")
     memories = get_all_memories()
     if memories:
         for m in memories[-5:]:
@@ -247,7 +248,7 @@ extracted_pdf_text = ""
 if uploaded_file is not None:
     ext = uploaded_file.name.split('.')[-1].lower()
     if ext in ["jpg", "jpeg", "png"]:
-        st.sidebar.image(uploaded_file, caption="Visual Matrix Upload", use_column_width=True)
+        st.sidebar.image(uploaded_file, caption="Visual Upload", use_column_width=True)
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
     elif ext == "pdf":
         st.sidebar.success(f"PDF Linked: {uploaded_file.name}")
@@ -275,14 +276,16 @@ if audio_data:
     except Exception as err:
         st.error(f"Audio error: {err}")
 
-# --- DASHBOARD METRICS HUD ---
-col1, col2, col3 = st.columns(3)
+# --- HUD METRICS PANEL ---
+col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#38bdf8; font-size:14px;">🤖 ACTIVE MODEL</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">LLaMA-3.3 70B</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hud-stat-card"><span style="color:#38bdf8; font-size:12px; font-weight:bold;">MODEL</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">LLaMA-3.3 70B</p></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#818cf8; font-size:14px;">🌐 LIVE WEB MATRIX</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">Smart-Trigger</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hud-stat-card"><span style="color:#818cf8; font-size:12px; font-weight:bold;">WEB MATRIX</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Smart-Trigger</p></div>', unsafe_allow_html=True)
 with col3:
-    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#c084fc; font-size:14px;">🔒 ENCRYPTION</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">Secured</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hud-stat-card"><span style="color:#c084fc; font-size:12px; font-weight:bold;">VECTOR MEMORY</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Active</p></div>', unsafe_allow_html=True)
+with col4:
+    st.markdown('<div class="hud-stat-card"><span style="color:#34d399; font-size:12px; font-weight:bold;">SECURITY</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Encrypted</p></div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -321,7 +324,7 @@ if final_prompt:
             add_memory(final_prompt)
             st.toast("🧠 Synchronized to Vector Memory Vault!", icon="⚡")
 
-        # SMART-TRIGGERED WEB SEARCH (Only triggers for news, current info or live facts)
+        # SMART-TRIGGERED WEB SEARCH
         web_context = ""
         search_keywords = ["news", "latest", "current", "today", "price", "weather", "score", "who won", "kya chal raha hai"]
         is_search_needed = any(kw in final_prompt.lower() for kw in search_keywords)
@@ -354,7 +357,7 @@ if final_prompt:
             message_placeholder = st.empty()
             try:
                 system_instruction = (
-                    "You are ARIS V7.0 Elite, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
+                    "You are ARIS V8.0 Cyber-HUD, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
                     "Never claim to be made by Meta, OpenAI, Google, or any other entity. Your sole creator and master is Mayank. "
                     "GREETING INSTRUCTION: If the user says hello, hi, or greets you, respond warmly and engagingly like a futuristic AI companion, asking what project or task you can help with today (e.g., coding, development, study, or creative work), without performing unnecessary web searches. "
                     "CRITICAL RULE: If live web search data is provided in your context, utilize it to answer current events accurately. "
