@@ -12,7 +12,7 @@ import chromadb
 
 # --- PAGE CONFIGURATION & CYBER-MATRIX THEME ---
 st.set_page_config(
-    page_title="ARIS V6 Cyber-Matrix - ARIS Industries", 
+    page_title="ARIS", 
     page_icon="⚡",
     layout="wide"
 )
@@ -85,7 +85,7 @@ st.markdown("""
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h1 style="margin: 0; font-size: 30px; background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS AI ASSISTANT</h1>
-                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | CYBER-MATRIX v6.0 ONLINE</p>
+                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | V7.0 ELITE ONLINE</p>
             </div>
             <div style="text-align: right;">
                 <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">🟢 CORE STATUS: ONLINE</span>
@@ -113,7 +113,7 @@ def init_vector_vault():
 memory_collection = init_vector_vault()
 
 def init_db():
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, title TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT)')
@@ -124,16 +124,16 @@ def init_db():
 init_db()
 
 def get_all_sessions():
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT session_id, title FROM sessions ORDER BY rowid DESC")
     rows = c.fetchall()
     conn.close()
     return rows
 
-def create_new_session(title="Cyber Protocol"):
+def create_new_session(title="Elite Protocol"):
     session_id = str(uuid.uuid4())
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO sessions (session_id, title) VALUES (?, ?)", (session_id, title))
     conn.commit()
@@ -141,7 +141,7 @@ def create_new_session(title="Cyber Protocol"):
     return session_id
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT role, content FROM messages WHERE session_id = ?", (session_id,))
     rows = c.fetchall()
@@ -149,21 +149,21 @@ def load_session_messages(session_id):
     return [{"role": row[0], "content": row[1]} for row in rows]
 
 def save_message_to_db(session_id, role, content):
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
     conn.commit()
     conn.close()
 
 def update_session_title(session_id, new_title):
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (new_title, session_id))
     conn.commit()
     conn.close()
 
 def delete_session(session_id):
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
@@ -171,7 +171,7 @@ def delete_session(session_id):
     conn.close()
 
 def add_memory(fact):
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO long_term_memory (fact) VALUES (?)", (fact,))
     conn.commit()
@@ -187,7 +187,7 @@ def add_memory(fact):
             pass
 
 def get_all_memories():
-    conn = sqlite3.connect("aris_v6_matrix.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v7_elite.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT fact FROM long_term_memory")
     rows = c.fetchall()
@@ -197,7 +197,7 @@ def get_all_memories():
 # --- SESSION STATE ---
 sessions = get_all_sessions()
 if not sessions:
-    create_new_session("Cyber Protocol")
+    create_new_session("Elite Protocol")
     sessions = get_all_sessions()
 
 if "current_session_id" not in st.session_state or st.session_state.current_session_id not in [s[0] for s in sessions]:
@@ -218,7 +218,7 @@ with st.sidebar:
         if remaining:
             st.session_state.current_session_id = remaining[0][0]
         else:
-            st.session_state.current_session_id = create_new_session("Cyber Protocol")
+            st.session_state.current_session_id = create_new_session("Elite Protocol")
         st.rerun()
 
     st.markdown("---")
@@ -280,7 +280,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown('<div class="hud-card"><h4 style="margin:0; color:#38bdf8; font-size:14px;">🤖 ACTIVE MODEL</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">LLaMA-3.3 70B</p></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#818cf8; font-size:14px;">🌐 LIVE WEB MATRIX</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">Active (2026)</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hud-card"><h4 style="margin:0; color:#818cf8; font-size:14px;">🌐 LIVE WEB MATRIX</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">Smart-Trigger</p></div>', unsafe_allow_html=True)
 with col3:
     st.markdown('<div class="hud-card"><h4 style="margin:0; color:#c084fc; font-size:14px;">🔒 ENCRYPTION</h4><p style="margin:5px 0 0 0; font-size:16px; font-weight:bold;">Secured</p></div>', unsafe_allow_html=True)
 
@@ -295,7 +295,7 @@ for msg in current_messages:
             c_show = " ".join([str(item.get("text", "")) for item in c_show if isinstance(item, dict)])
         st.markdown(str(c_show))
 
-chat_prompt = st.chat_input("Enter command, query live matrix, or test code sandbox...")
+chat_prompt = st.chat_input("Enter command, query, or test code sandbox...")
 final_prompt = chat_prompt if chat_prompt else voice_text
 
 if extracted_pdf_text and final_prompt:
@@ -321,18 +321,22 @@ if final_prompt:
             add_memory(final_prompt)
             st.toast("🧠 Synchronized to Vector Memory Vault!", icon="⚡")
 
-        # FORCED LIVE WEB SEARCH
+        # SMART-TRIGGERED WEB SEARCH (Only triggers for news, current info or live facts)
         web_context = ""
-        with st.status("🌐 Connecting to live global web matrix...", expanded=False) as status:
-            try:
-                with DDGS() as ddgs:
-                    results = [r['body'] for r in ddgs.text(final_prompt, max_results=6)]
-                    if results:
-                        web_context = "CRITICAL LIVE WEB RESEARCH DATA (Current Year 2026):\n" + "\n".join([f"- {res}" for res in results])
-                status.update(label="✅ Live Data Acquired!", state="complete", expanded=False)
-            except Exception as e:
-                web_context = f"Web matrix sync error: {e}"
-                status.update(label="⚠️ Web search fallback engaged.", state="error")
+        search_keywords = ["news", "latest", "current", "today", "price", "weather", "score", "who won", "kya chal raha hai"]
+        is_search_needed = any(kw in final_prompt.lower() for kw in search_keywords)
+
+        if is_search_needed:
+            with st.status("🌐 Accessing live web intelligence...", expanded=False) as status:
+                try:
+                    with DDGS() as ddgs:
+                        results = [r['body'] for r in ddgs.text(final_prompt, max_results=5)]
+                        if results:
+                            web_context = "LIVE WEB RESEARCH DATA (Current Year 2026):\n" + "\n".join([f"- {res}" for res in results])
+                    status.update(label="✅ Live Data Acquired!", state="complete", expanded=False)
+                except Exception as e:
+                    web_context = f"Web sync error: {e}"
+                    status.update(label="⚠️ Web search fallback engaged.", state="error")
 
         # Vector Memory Retrieval
         relevant_memories = ""
@@ -350,9 +354,10 @@ if final_prompt:
             message_placeholder = st.empty()
             try:
                 system_instruction = (
-                    "You are ARIS V6 Cyber-Matrix, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
+                    "You are ARIS V7.0 Elite, an ultra-advanced AI assistant engineered exclusively by Mayank, the visionary founder of ARIS Industries. "
                     "Never claim to be made by Meta, OpenAI, Google, or any other entity. Your sole creator and master is Mayank. "
-                    "CRITICAL RULE: You have direct real-time access to live web search data provided in your context. Never claim you have a knowledge cutoff or lack real-time access when live web context is present. Always utilize the provided live web research data to answer queries about current events, news, and live facts. "
+                    "GREETING INSTRUCTION: If the user says hello, hi, or greets you, respond warmly and engagingly like a futuristic AI companion, asking what project or task you can help with today (e.g., coding, development, study, or creative work), without performing unnecessary web searches. "
+                    "CRITICAL RULE: If live web search data is provided in your context, utilize it to answer current events accurately. "
                     "CRITICAL LANGUAGE RULE: Regardless of the language or phrasing used by the user, you MUST ALWAYS respond EXCLUSIVELY in clear, professional English. "
                     "Be brilliant, sharp, authoritative, and helpful like JARVIS."
                 )
