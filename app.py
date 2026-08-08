@@ -11,10 +11,11 @@ import sys
 import chromadb
 import pyttsx3
 import os
+import subprocess
 
 # --- PAGE CONFIGURATION & HINGLISH JARVIS THEME ---
 st.set_page_config(
-    page_title="ARIS V13.0 Hinglish JARVIS", 
+    page_title="ARIS V14.0 Desktop JARVIS", 
     page_icon="⚡",
     layout="wide"
 )
@@ -104,10 +105,10 @@ st.markdown("""
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h1 style="margin: 0; font-size: 28px; background: linear-gradient(45deg, #ef4444, #f87171, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚡ ARIS AI ASSISTANT</h1>
-                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | HINGLISH JARVIS CORE v13.0</p>
+                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px; letter-spacing: 0.5px;">SYSTEM ARCHITECT: MAYANK | DESKTOP AUTOMATION CORE v14.0</p>
             </div>
             <div>
-                <span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">🗣️ HINGLISH JARVIS ACTIVE</span>
+                <span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold;">💻 DESKTOP JARVIS ACTIVE</span>
             </div>
         </div>
     </div>
@@ -132,7 +133,7 @@ def init_vector_vault():
 memory_collection = init_vector_vault()
 
 def init_db():
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, title TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT)')
@@ -143,16 +144,16 @@ def init_db():
 init_db()
 
 def get_all_sessions():
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT session_id, title FROM sessions ORDER BY rowid DESC")
     rows = c.fetchall()
     conn.close()
     return rows
 
-def create_new_session(title="Hinglish Protocol"):
+def create_new_session(title="Desktop Protocol"):
     session_id = str(uuid.uuid4())
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO sessions (session_id, title) VALUES (?, ?)", (session_id, title))
     conn.commit()
@@ -160,7 +161,7 @@ def create_new_session(title="Hinglish Protocol"):
     return session_id
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT role, content FROM messages WHERE session_id = ?", (session_id,))
     rows = c.fetchall()
@@ -168,21 +169,21 @@ def load_session_messages(session_id):
     return [{"role": row[0], "content": row[1]} for row in rows]
 
 def save_message_to_db(session_id, role, content):
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
     conn.commit()
     conn.close()
 
 def update_session_title(session_id, new_title):
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (new_title, session_id))
     conn.commit()
     conn.close()
 
 def delete_session(session_id):
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
@@ -190,7 +191,7 @@ def delete_session(session_id):
     conn.close()
 
 def add_memory(fact):
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("INSERT INTO long_term_memory (fact) VALUES (?)", (fact,))
     conn.commit()
@@ -202,7 +203,7 @@ def add_memory(fact):
             pass
 
 def get_all_memories():
-    conn = sqlite3.connect("aris_v13_hinglish.db", check_same_thread=False)
+    conn = sqlite3.connect("aris_v14_desktop.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT fact FROM long_term_memory")
     rows = c.fetchall()
@@ -212,7 +213,7 @@ def get_all_memories():
 # --- SESSION STATE ---
 sessions = get_all_sessions()
 if not sessions:
-    create_new_session("Hinglish Protocol")
+    create_new_session("Desktop Protocol")
     sessions = get_all_sessions()
 
 if "current_session_id" not in st.session_state or st.session_state.current_session_id not in [s[0] for s in sessions]:
@@ -233,7 +234,7 @@ with st.sidebar:
         if remaining:
             st.session_state.current_session_id = remaining[0][0]
         else:
-            st.session_state.current_session_id = create_new_session("Hinglish Protocol")
+            st.session_state.current_session_id = create_new_session("Desktop Protocol")
         st.rerun()
 
     st.markdown("---")
@@ -295,7 +296,7 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown('<div class="hud-stat-card"><span style="color:#ef4444; font-size:12px; font-weight:bold;">MODEL</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">LLaMA-3.3 70B</p></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown('<div class="hud-stat-card"><span style="color:#38bdf8; font-size:12px; font-weight:bold;">LANGUAGE</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Hinglish JARVIS</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hud-stat-card"><span style="color:#38bdf8; font-size:12px; font-weight:bold;">AUTOMATION</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Desktop Enabled</p></div>', unsafe_allow_html=True)
 with col3:
     st.markdown('<div class="hud-stat-card"><span style="color:#c084fc; font-size:12px; font-weight:bold;">VECTOR VAULT</span><p style="margin:2px 0 0 0; font-size:15px; font-weight:bold;">Synced</p></div>', unsafe_allow_html=True)
 with col4:
@@ -313,7 +314,7 @@ for msg in current_messages:
             c_show = " ".join([str(item.get("text", "")) for item in c_show if isinstance(item, dict)])
         st.markdown(str(c_show))
 
-chat_prompt = st.chat_input("Enter command, query, or test code sandbox...")
+chat_prompt = st.chat_input("Enter command, query, or desktop automation code...")
 final_prompt = chat_prompt if chat_prompt else voice_text
 
 if extracted_pdf_text and final_prompt:
@@ -376,10 +377,11 @@ if final_prompt:
             message_placeholder = st.empty()
             try:
                 system_instruction = (
-                    "You are ARIS V13.0, an elite AI assistant modeled like JARVIS, engineered exclusively by Mayank. "
+                    "You are ARIS V14.0, an elite AI assistant and Desktop Automation Companion modeled after JARVIS, engineered exclusively by Mayank. "
                     "Current Year: 2026. Your sole creator and master is Mayank. "
-                    "LANGUAGE RULE (HINGLISH): You must reply strictly in natural, conversational Hinglish (Hindi written in Latin script mixed with English technical terms). Jaise dost aapas mein baat karte hain ya jaise real JARVIS baat karta hai—smart, techy, aur friendly tone mein! "
-                    "GREETING PROTOCOL: If the user says hello, hi, heloo, or greets you, DO NOT perform a web search. Greet them warmly in Hinglish as your boss/creator Mayank, and ask ki aaj kaun sa code ya task execute karna hai. "
+                    "DESKTOP AUTOMATION CAPABILITY: You can write Python code using libraries like os, subprocess, and pyautogui to automate PC tasks (like opening Notepad, running CMD commands, managing files). When the user asks for system automation, provide clean Python code blocks. "
+                    "LANGUAGE RULE (HINGLISH): Reply strictly in natural, conversational Hinglish with a smart JARVIS tone. "
+                    "GREETING PROTOCOL: If the user says hello, hi, heloo, or greets you, DO NOT perform a web search. Greet them warmly in Hinglish as boss/creator Mayank, and ask ki aaj kaun sa system task ya automation execute karna hai. "
                     "CRITICAL RULE: Use live web search data directly if provided, without mentioning any knowledge cutoffs."
                 )
 
@@ -420,8 +422,7 @@ if final_prompt:
                 # Offline TTS using pyttsx3 for JARVIS Voice
                 try:
                     engine = pyttsx3.init()
-                    engine.setProperty('rate', 170) # Speed
-                    # Try setting a deep voice if available
+                    engine.setProperty('rate', 170)
                     voices = engine.getProperty('voices')
                     for voice in voices:
                         if "english" in voice.name.lower() or "uk" in voice.name.lower():
@@ -434,12 +435,12 @@ if final_prompt:
                 except Exception as tts_err:
                     st.caption(f"Voice engine status: {tts_err}")
 
-                # In-App Python Sandbox Runner
+                # In-App Python Sandbox & Desktop Automation Runner
                 if "```python" in response:
                     try:
                         code_block = response.split("```python")[1].split("```")[0].strip()
                         if code_block:
-                            st.markdown("### 💻 In-App Python Sandbox Execution Terminal:")
+                            st.markdown("### 💻 Python Sandbox & Desktop Execution Terminal:")
                             old_stdout = sys.stdout
                             new_stdout = io.StringIO()
                             sys.stdout = new_stdout
@@ -452,8 +453,8 @@ if final_prompt:
                             if execution_output:
                                 st.markdown(f'<div class="code-sandbox-output">{execution_output}</div>', unsafe_allow_html=True)
                             else:
-                                st.markdown('<div class="code-sandbox-output">[Terminal] Code executed successfully with zero print output.</div>', unsafe_allow_html=True)
-                    exceptException as sandbox_err:
+                                st.markdown('<div class="code-sandbox-output">[Terminal] Code executed successfully. System action performed.</div>', unsafe_allow_html=True)
+                    except Exception as sandbox_err:
                         st.markdown(f'<div class="code-sandbox-output">[Terminal Error] {sandbox_err}</div>', unsafe_allow_html=True)
             
             except Exception as e:
