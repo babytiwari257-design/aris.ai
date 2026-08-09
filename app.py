@@ -6,49 +6,46 @@ from groq import Groq
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // Neon-Matrix Neural Core",
+    page_title="ARIS // Cyber-Blue Matrix Core",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- ADVANCED CYBERPUNK & NEON GREEN CSS STYLING ---
+# --- ADVANCED CYBERPUNK & NEON BLUE/GREEN CSS STYLING ---
 st.markdown("""
 <style>
     .stApp {
         background-color: #05070b;
         color: #e2e8f0;
     }
-    /* Sidebar Styling */
     [data-testid="stSidebar"] {
         background-color: #030406;
         border-right: 1px solid #1e293b;
     }
-    /* Header Banner */
     .aris-header {
-        background: linear-gradient(90deg, #dc2626 0%, #065f46 100%);
+        background: linear-gradient(90deg, #dc2626 0%, #0284c7 100%);
         padding: 20px;
         border-radius: 12px;
         color: white;
         text-align: center;
         font-weight: 800;
         letter-spacing: 2px;
-        box-shadow: 0 4px 25px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 4px 25px rgba(2, 132, 199, 0.3);
         margin-bottom: 20px;
     }
-    /* Metric Cards */
     .metric-card {
         background-color: #0f172a;
         border: 1px solid #1e293b;
         padding: 12px;
         border-radius: 8px;
         text-align: center;
-        color: #34d399;
+        color: #38bdf8;
         font-size: 13px;
         font-weight: bold;
-        box-shadow: inset 0 0 10px rgba(52, 211, 153, 0.1);
+        box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.1);
     }
-    /* Glowing Green AI Assistant Chat Responses */
+    /* Glowing Green AI Assistant Chat Responses (Even child) */
     [data-testid="stChatMessage"]:nth-child(even) {
         background-color: #06120e !important;
         border: 1px solid #059669 !important;
@@ -61,11 +58,18 @@ st.markdown("""
         color: #34d399 !important;
         font-weight: 500;
     }
-    /* User Chat Bubble Customization */
+    /* Neon Blue User Chat Bubbles (Odd child) */
     [data-testid="stChatMessage"]:nth-child(odd) {
-        background-color: #0f172a !important;
-        border: 1px solid #334155 !important;
+        background-color: #082f49 !important;
+        border: 1px solid #0284c7 !important;
         border-radius: 10px;
+        box-shadow: 0 0 15px rgba(2, 132, 199, 0.2);
+    }
+    [data-testid="stChatMessage"]:nth-child(odd) p, 
+    [data-testid="stChatMessage"]:nth-child(odd) span, 
+    [data-testid="stChatMessage"]:nth-child(odd) li {
+        color: #38bdf8 !important;
+        font-weight: 500;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -82,6 +86,8 @@ if "memory_vault" not in st.session_state:
 def mj_voice_agent(text):
     try:
         clean_text = str(text).replace('"', '').replace("'", "").replace("\n", " ")
+        if len(clean_text) > 300:
+            clean_text = clean_text[:300] + " ... response continues on screen."
         js_code = f"""
         <script>
             var msg = new SpeechSynthesisUtterance('{clean_text}');
@@ -94,16 +100,16 @@ def mj_voice_agent(text):
     except Exception:
         pass
 
-# --- AGENT 2: 'OMEGA' (Graphics, Desktop Automation & Vision Unit) ---
+# --- AGENT 2: 'OMEGA' (Graphics, Desktop & Vision Unit) ---
 def omega_graphics_desktop_agent(query):
     try:
         q_lower = query.lower()
         if "open notepad" in q_lower:
             subprocess.Popen(["notepad.exe"])
-            return "OMEGA (Graphics/Desktop Unit): Notepad successfully launched."
+            return "OMEGA: Notepad successfully launched on your system, Boss."
         elif "open chrome" in q_lower or "open browser" in q_lower:
             os.system("start chrome")
-            return "OMEGA (Graphics/Desktop Unit): Web browser initiated."
+            return "OMEGA: Web browser initiated successfully."
         elif "shutdown pc" in q_lower:
             os.system("shutdown /s /t 5")
             return "WARNING! OMEGA Security Unit triggered system shutdown."
@@ -111,19 +117,14 @@ def omega_graphics_desktop_agent(query):
         return f"OMEGA Execution Error: {str(e)}"
     return None
 
-# --- AGENT 3: 'ALPHA' (Ultra-Fast Elite Coding Unit) ---
-def alpha_coding_agent(query):
+# --- AGENT 3: 'ALPHA' (Coding Unit with Language Match) ---
+def alpha_coding_agent(query, user_lang_instruction):
     try:
         api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
-        if not api_key or api_key == "YOUR_GROQ_API_KEY":
-            return "ALPHA Error: Groq API Key missing for code generation."
-        
         client = Groq(api_key=api_key)
         system_prompt = (
-            "You are ALPHA, the elite, ultra-fast coding unit operating under master boss ARIS, "
-            "engineered exclusively by Mayank. Your sole purpose is to write optimized, production-ready, "
-            "bug-free code with proper markdown formatting, comments, and clean logic. "
-            "Respond directly with the solution code and brief technical guidance in Hinglish."
+            f"You are ALPHA, an elite coding unit under master boss ARIS, engineered by Mayank. "
+            f"Write optimized, bug-free code. {user_lang_instruction}"
         )
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -136,17 +137,14 @@ def alpha_coding_agent(query):
     except Exception as e:
         return f"ALPHA Coding Error: {str(e)}"
 
-# --- AGENT 4: 'HELIOS' (Chat Manager & Memory Unit) ---
-def helios_chat_memory_agent(query):
+# --- AGENT 4: 'HELIOS' (Chat Manager with Language Match) ---
+def helios_chat_memory_agent(query, user_lang_instruction):
     try:
         api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
-        if not api_key or api_key == "YOUR_GROQ_API_KEY":
-            return "HELIOS Error: Groq API Key missing."
-        
         client = Groq(api_key=api_key)
         system_prompt = (
-            "You are HELIOS, the chat manager and conversational core, operating under the master boss ARIS, "
-            "engineered exclusively by Mayank. Respond in conversational Hinglish with a high-tech, helpful tone."
+            f"You are HELIOS, chat manager operating under master boss ARIS, engineered by Mayank. "
+            f"{user_lang_instruction}"
         )
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -164,24 +162,31 @@ def aris_master_controller(query, uploaded_image=None):
     try:
         q_lower = query.lower() if query else ""
         
+        hindi_keywords = ["kya", "kaise", "batao", "likho", "hain", "hai", "kaun", "karo", "yeh", "woh", "mujhe", "mera"]
+        is_hindi = any(word in q_lower for word in hindi_keywords) or any(ord(c) > 127 for c in query)
+        
+        if is_hindi:
+            lang_instruction = "User is communicating in Hindi/Hinglish. You MUST reply strictly in conversational Hinglish/Hindi with a smart techy tone."
+        else:
+            lang_instruction = "User is communicating in English. Reply in clear, professional English."
+
         if q_lower.startswith("remember "):
             fact = query[9:].strip()
             st.session_state.memory_vault.append(fact)
-            return f"ARIS (Master Boss): Helios has successfully recorded this in the Memory Vault: '{fact}'"
+            return f"ARIS (Master Boss): Helios ne yeh memory vault mein successfully save kar liya hai: '{fact}'" if is_hindi else f"ARIS (Master Boss): Helios has successfully recorded this in the Memory Vault: '{fact}'"
             
         omega_result = omega_graphics_desktop_agent(query)
         if omega_result:
-            return f"ARIS (Master Boss): Task delegated to OMEGA -> {omega_result}"
+            return omega_result
             
-        coding_keywords = ["code", "script", "program", "function", "python", "html", "css", "bug", "error fix", "bana ke do", "code likho"]
+        coding_keywords = ["code", "script", "program", "function", "python", "html", "css", "bug", "error", "bana ke do", "likho"]
         if any(keyword in q_lower for keyword in coding_keywords) or q_lower.startswith("write "):
-            return alpha_coding_agent(query)
+            return alpha_coding_agent(query, lang_instruction)
             
-        if uploaded_image is not None:
-            return f"OMEGA (Vision Unit): Image received successfully, Boss Mayank. Analysis complete—visual interface synchronized."
+        if uploaded_file is not None:
+            return "OMEGA (Vision Unit): Image successfully analyze ho gayi hai, Boss Mayank!" if is_hindi else "OMEGA (Vision Unit): Image received and analyzed successfully, Boss Mayank."
             
-        helios_response = helios_chat_memory_agent(query)
-        return f"ARIS (Master Boss Core): {helios_response}"
+        return helios_chat_memory_agent(query, lang_instruction)
         
     except Exception as e:
         return f"ARIS System Core Error: {str(e)}"
@@ -214,12 +219,12 @@ with st.sidebar:
 # --- MAIN INTERFACE ---
 st.markdown(f"""
 <div class="aris-header">
-    <h2>⚡ ARIS // NEON-MATRIX SUPREME CORE</h2>
-    <p style="margin:0; font-size:13px; color:#34d399;">MASTER BOSS: ARIS | ACTIVE THREAD: {st.session_state.current_thread}</p>
+    <h2>⚡ ARIS // CYBER-BLUE SUPREME CORE</h2>
+    <p style="margin:0; font-size:13px; color:#38bdf8;">MASTER BOSS: ARIS | ACTIVE THREAD: {st.session_state.current_thread}</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Metrics Grid showing the 5-Member Squad Status in Green Glow
+# Metrics Grid
 col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     st.markdown('<div class="metric-card"><b>BOSS</b><br>ARIS</div>', unsafe_allow_html=True)
@@ -234,7 +239,7 @@ with col5:
 
 st.write("")
 
-# Image Upload Widget for OMEGA Vision Unit
+# Image Upload Widget
 uploaded_file = st.file_uploader("📤 Upload Image / Screenshot for OMEGA Vision Analysis", type=["jpg", "jpeg", "png"])
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
@@ -265,4 +270,4 @@ if user_query or uploaded_file:
         placeholder.markdown(final_response)
         current_messages.append({"role": "assistant", "content": final_response})
         
-        mj_voice_agent("Task completed by the squad, Boss Mayank.")
+        mj_voice_agent(final_response)
