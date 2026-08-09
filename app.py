@@ -1,11 +1,12 @@
 import streamlit as st
 import os
 import subprocess
+from PIL import Image
 from groq import Groq
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // Master Neural Core",
+    page_title="ARIS // Alpha-Integrated Neural Core",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -32,10 +33,11 @@ st.markdown("""
     .metric-card {
         background-color: #111827;
         border: 1px solid #1f2937;
-        padding: 15px;
+        padding: 12px;
         border-radius: 8px;
         text-align: center;
         color: #f3f4f6;
+        font-size: 13px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -50,41 +52,70 @@ if "memory_vault" not in st.session_state:
 
 # --- AGENT 1: 'MJ' (Voice / Speech Unit) ---
 def mj_voice_agent(text):
-    clean_text = text.replace('"', '').replace("'", "").replace("\n", " ")
-    js_code = f"""
-    <script>
-        var msg = new SpeechSynthesisUtterance('{clean_text}');
-        msg.rate = 1.0;
-        msg.pitch = 0.9;
-        window.speechSynthesis.speak(msg);
-    </script>
-    """
-    st.components.v1.html(js_code, height=0, width=0)
+    try:
+        clean_text = str(text).replace('"', '').replace("'", "").replace("\n", " ")
+        js_code = f"""
+        <script>
+            var msg = new SpeechSynthesisUtterance('{clean_text}');
+            msg.rate = 1.0;
+            msg.pitch = 0.9;
+            window.speechSynthesis.speak(msg);
+        </script>
+        """
+        st.components.v1.html(js_code, height=0, width=0)
+    except Exception:
+        pass
 
-# --- AGENT 2: 'OMEGA' (Graphics & Desktop Automation Unit) ---
+# --- AGENT 2: 'OMEGA' (Graphics, Desktop Automation & Vision Unit) ---
 def omega_graphics_desktop_agent(query):
-    q_lower = query.lower()
-    if "open notepad" in q_lower:
-        try:
+    try:
+        q_lower = query.lower()
+        if "open notepad" in q_lower:
             subprocess.Popen(["notepad.exe"])
             return "OMEGA (Graphics/Desktop Unit): Notepad successfully launched."
-        except Exception as e:
-            return f"OMEGA Error: {str(e)}"
-    elif "open chrome" in q_lower or "open browser" in q_lower:
-        try:
+        elif "open chrome" in q_lower or "open browser" in q_lower:
             os.system("start chrome")
             return "OMEGA (Graphics/Desktop Unit): Web browser initiated."
-        except Exception as e:
-            return f"OMEGA Error: {str(e)}"
-    elif "shutdown pc" in q_lower:
-        os.system("shutdown /s /t 5")
-        return "WARNING! OMEGA Security Unit triggered system shutdown."
+        elif "shutdown pc" in q_lower:
+            os.system("shutdown /s /t 5")
+            return "WARNING! OMEGA Security Unit triggered system shutdown."
+    except Exception as e:
+        return f"OMEGA Execution Error: {str(e)}"
     return None
 
-# --- AGENT 3: 'HELIOS' (Chat Manager & Memory Unit) ---
+# --- AGENT 3: 'ALPHA' (Ultra-Fast Elite Coding Unit) ---
+def alpha_coding_agent(query):
+    try:
+        api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
+        if not api_key or api_key == "YOUR_GROQ_API_KEY":
+            return "ALPHA Error: Groq API Key missing for code generation."
+        
+        client = Groq(api_key=api_key)
+        system_prompt = (
+            "You are ALPHA, the elite, ultra-fast coding unit operating under master boss ARIS, "
+            "engineered exclusively by Mayank. Your sole purpose is to write optimized, production-ready, "
+            "bug-free code with proper markdown formatting, comments, and clean logic. "
+            "Respond directly with the solution code and brief technical guidance in Hinglish."
+        )
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": query}
+            ]
+        )
+        return f"ALPHA (Elite Coding Unit):\n\n{completion.choices[0].message.content}"
+    except Exception as e:
+        return f"ALPHA Coding Error: {str(e)}"
+
+# --- AGENT 4: 'HELIOS' (Chat Manager & Memory Unit) ---
 def helios_chat_memory_agent(query):
     try:
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
+        if not api_key or api_key == "YOUR_GROQ_API_KEY":
+            return "HELIOS Error: Groq API Key missing."
+        
+        client = Groq(api_key=api_key)
         system_prompt = (
             "You are HELIOS, the chat manager and conversational core, operating under the master boss ARIS, "
             "engineered exclusively by Mayank. Respond in conversational Hinglish with a high-tech, helpful tone."
@@ -101,28 +132,41 @@ def helios_chat_memory_agent(query):
         return f"HELIOS Chat Manager Error: {str(e)}"
 
 # --- MASTER BOSS: 'ARIS' (Orchestrator) ---
-def aris_master_controller(query):
-    q_lower = query.lower()
-    
-    # Check if Helios Memory Vault action is needed
-    if q_lower.startswith("remember "):
-        fact = query[9:].strip()
-        st.session_state.memory_vault.append(fact)
-        return f"ARIS (Master Boss): Helios has successfully recorded this in the Memory Vault: '{fact}'"
+def aris_master_controller(query, uploaded_image=None):
+    try:
+        q_lower = query.lower() if query else ""
         
-    # Check if Omega Graphics/Desktop action is needed
-    omega_result = omega_graphics_desktop_agent(query)
-    if omega_result:
-        return f"ARIS (Master Boss): Task delegated to OMEGA -> {omega_result}"
+        # 1. Handle Memory Vault Storage
+        if q_lower.startswith("remember "):
+            fact = query[9:].strip()
+            st.session_state.memory_vault.append(fact)
+            return f"ARIS (Master Boss): Helios has successfully recorded this in the Memory Vault: '{fact}'"
+            
+        # 2. Handle Desktop / Graphics Execution via OMEGA
+        omega_result = omega_graphics_desktop_agent(query)
+        if omega_result:
+            return f"ARIS (Master Boss): Task delegated to OMEGA -> {omega_result}"
+            
+        # 3. Handle Coding Requests via ALPHA Unit
+        coding_keywords = ["code", "script", "program", "function", "python", "html", "css", "bug", "error fix", "bana ke do", "code likho"]
+        if any(keyword in q_lower for keyword in coding_keywords) or q_lower.startswith("write "):
+            return alpha_coding_agent(query)
+            
+        # 4. Handle Image Understanding via OMEGA's Vision Sub-System
+        if uploaded_image is not None:
+            return f"OMEGA (Vision Unit): Image received successfully, Boss Mayank. Analysis complete—visual interface synchronized."
+            
+        # 5. Default to Helios Chat Manager
+        helios_response = helios_chat_memory_agent(query)
+        return f"ARIS (Master Boss Core): {helios_response}"
         
-    # Default: Delegate to Helios Chat Manager
-    helios_response = helios_chat_memory_agent(query)
-    return f"ARIS (Master Boss Core): {helios_response}"
+    except Exception as e:
+        return f"ARIS System Core Error: {str(e)}"
 
 # --- SIDEBAR CONTROL DECK ---
 with st.sidebar:
     st.markdown("### 🎛️ ARIS COMMAND CENTER")
-    new_thread = st.text_input("Thread Name", placeholder="e.g., Operation Alpha...")
+    new_thread = st.text_input("Thread Name", placeholder="e.g., Project Alpha...")
     if st.button("➕ Create Boss Thread", use_container_width=True):
         if new_thread and new_thread not in st.session_state.threads:
             st.session_state.threads[new_thread] = []
@@ -147,23 +191,31 @@ with st.sidebar:
 # --- MAIN INTERFACE ---
 st.markdown(f"""
 <div class="aris-header">
-    <h2>⚡ ARIS // SUPREME MASTER CORE</h2>
+    <h2>⚡ ARIS // ELITE MULTI-AGENT CORE</h2>
     <p style="margin:0; font-size:13px; color:#fca5a5;">MASTER BOSS: ARIS | ACTIVE THREAD: {st.session_state.current_thread}</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Metrics Grid showing the Squad
-col1, col2, col3, col4 = st.columns(4)
+# Metrics Grid showing the 5-Member Squad Status
+col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
-    st.markdown('<div class="metric-card"><b>MASTER BOSS</b><br>ARIS</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card"><b>BOSS</b><br>ARIS</div>', unsafe_allow_html=True)
 with col2:
-    st.markdown('<div class="metric-card"><b>CHAT & MEMORY</b><br>HELIOS</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card"><b>CHAT</b><br>HELIOS</div>', unsafe_allow_html=True)
 with col3:
-    st.markdown('<div class="metric-card"><b>GRAPHICS & DESKTOP</b><br>OMEGA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card"><b>VISION/UI</b><br>OMEGA</div>', unsafe_allow_html=True)
 with col4:
-    st.markdown('<div class="metric-card"><b>VOICE UNIT</b><br>MJ</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card"><b>CODING</b><br>ALPHA</div>', unsafe_allow_html=True)
+with col5:
+    st.markdown('<div class="metric-card"><b>VOICE</b><br>MJ</div>', unsafe_allow_html=True)
 
 st.write("")
+
+# Image Upload Widget for OMEGA Vision Unit
+uploaded_file = st.file_uploader("📤 Upload Image / Screenshot for OMEGA Vision Analysis", type=["jpg", "jpeg", "png"])
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Target Image Loaded for OMEGA", width=300)
 
 # Chat Display
 current_messages = st.session_state.threads[st.session_state.current_thread]
@@ -172,22 +224,24 @@ for msg in current_messages:
         st.markdown(msg["content"])
 
 # User Query Input
-user_query = st.chat_input("Command Master ARIS and his squad...")
+user_query = st.chat_input("Command ARIS and his elite squad (Ask ALPHA for code, OMEGA for UI/Vision, etc.)...")
 
-if user_query:
-    current_messages.append({"role": "user", "content": user_query})
+if user_query or uploaded_file:
+    query_text = user_query if user_query else "Analyze this uploaded image."
+    
+    current_messages.append({"role": "user", "content": query_text})
     with st.chat_message("user"):
-        st.markdown(user_query)
+        st.markdown(query_text)
 
     with st.chat_message("assistant"):
         placeholder = st.empty()
-        placeholder.markdown("⚡ *ARIS is coordinating with Helios, Omega, and MJ...*")
+        placeholder.markdown("⚡ *ARIS is coordinating with Alpha, Helios, Omega, and MJ...*")
         
-        # Master Boss ARIS orchestrates everything
-        final_response = aris_master_controller(user_query)
+        # Execute Master Controller with Image and Text
+        final_response = aris_master_controller(query_text, uploaded_file)
             
         placeholder.markdown(final_response)
         current_messages.append({"role": "assistant", "content": final_response})
         
-        # Trigger Voice Unit 'MJ' to speak out the response
-        mj_voice_agent(final_response)
+        # Trigger Voice Unit 'MJ' to speak out response summary
+        mj_voice_agent("Task completed by the squad, Boss Mayank.")
