@@ -4,7 +4,6 @@ import subprocess
 from PIL import Image
 from groq import Groq
 import base64
-import io
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -119,17 +118,15 @@ def omega_graphics_desktop_agent(query):
         return f"OMEGA Execution Error: {str(e)}"
     return None
 
-# --- AGENT 3: 'OMEGA VISION' (Image Understanding Unit) ---
+# --- AGENT 3: 'OMEGA VISION' (Image Understanding Unit - Updated Model) ---
 def omega_vision_agent(query, uploaded_file, lang_instruction):
     try:
         api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
         client = Groq(api_key=api_key)
         
-        # Convert uploaded image to base64 for API
         bytes_data = uploaded_file.getvalue()
         base64_image = base64.b64encode(bytes_data).decode('utf-8')
         
-        # Determine image format
         img_type = uploaded_file.type.split("/")[-1]
         if img_type not in ["jpeg", "png", "jpg", "webp"]:
             img_type = "jpeg"
@@ -139,8 +136,9 @@ def omega_vision_agent(query, uploaded_file, lang_instruction):
             f"Analyze the provided image carefully and answer the user's question about it in detail. {lang_instruction}"
         )
         
+        # Updated to the active vision model endpoint
         completion = client.chat.completions.create(
-            model="llama-3.2-11b-vision-preview",
+            model="llama-3.2-90b-vision-preview",
             messages=[
                 {
                     "role": "user",
@@ -224,7 +222,6 @@ def aris_master_controller(query, uploaded_image=None):
         if omega_result:
             return omega_result
             
-        # If image is uploaded, trigger Omega Vision Agent
         if uploaded_image is not None:
             return omega_vision_agent(query, uploaded_image, lang_instruction)
             
@@ -303,7 +300,7 @@ for msg in current_messages:
         st.markdown(msg["content"])
 
 # User Query Input
-user_query = st.chat_input("Command ARIS and his squad (Ask about images, code, etc.)...")
+user_query = st.chat_input("Command ARIS and his squad...")
 
 if user_query or uploaded_file:
     query_text = user_query if user_query else "Analyze this uploaded image and explain it."
