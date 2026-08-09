@@ -6,38 +6,66 @@ from groq import Groq
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // Alpha-Integrated Neural Core",
+    page_title="ARIS // Neon-Matrix Neural Core",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- CYBERPUNK STYLING ---
+# --- ADVANCED CYBERPUNK & NEON GREEN CSS STYLING ---
 st.markdown("""
 <style>
     .stApp {
-        background-color: #0b0f19;
+        background-color: #05070b;
         color: #e2e8f0;
     }
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background-color: #030406;
+        border-right: 1px solid #1e293b;
+    }
+    /* Header Banner */
     .aris-header {
-        background: linear-gradient(90deg, #dc2626 0%, #7f1d1d 100%);
+        background: linear-gradient(90deg, #dc2626 0%, #065f46 100%);
         padding: 20px;
-        border-radius: 10px;
+        border-radius: 12px;
         color: white;
         text-align: center;
         font-weight: 800;
         letter-spacing: 2px;
-        box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+        box-shadow: 0 4px 25px rgba(16, 185, 129, 0.3);
         margin-bottom: 20px;
     }
+    /* Metric Cards */
     .metric-card {
-        background-color: #111827;
-        border: 1px solid #1f2937;
+        background-color: #0f172a;
+        border: 1px solid #1e293b;
         padding: 12px;
         border-radius: 8px;
         text-align: center;
-        color: #f3f4f6;
+        color: #34d399;
         font-size: 13px;
+        font-weight: bold;
+        box-shadow: inset 0 0 10px rgba(52, 211, 153, 0.1);
+    }
+    /* Glowing Green AI Assistant Chat Responses */
+    [data-testid="stChatMessage"]:nth-child(even) {
+        background-color: #06120e !important;
+        border: 1px solid #059669 !important;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+    [data-testid="stChatMessage"]:nth-child(even) p, 
+    [data-testid="stChatMessage"]:nth-child(even) span, 
+    [data-testid="stChatMessage"]:nth-child(even) li {
+        color: #34d399 !important;
+        font-weight: 500;
+    }
+    /* User Chat Bubble Customization */
+    [data-testid="stChatMessage"]:nth-child(odd) {
+        background-color: #0f172a !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -136,27 +164,22 @@ def aris_master_controller(query, uploaded_image=None):
     try:
         q_lower = query.lower() if query else ""
         
-        # 1. Handle Memory Vault Storage
         if q_lower.startswith("remember "):
             fact = query[9:].strip()
             st.session_state.memory_vault.append(fact)
             return f"ARIS (Master Boss): Helios has successfully recorded this in the Memory Vault: '{fact}'"
             
-        # 2. Handle Desktop / Graphics Execution via OMEGA
         omega_result = omega_graphics_desktop_agent(query)
         if omega_result:
             return f"ARIS (Master Boss): Task delegated to OMEGA -> {omega_result}"
             
-        # 3. Handle Coding Requests via ALPHA Unit
         coding_keywords = ["code", "script", "program", "function", "python", "html", "css", "bug", "error fix", "bana ke do", "code likho"]
         if any(keyword in q_lower for keyword in coding_keywords) or q_lower.startswith("write "):
             return alpha_coding_agent(query)
             
-        # 4. Handle Image Understanding via OMEGA's Vision Sub-System
         if uploaded_image is not None:
             return f"OMEGA (Vision Unit): Image received successfully, Boss Mayank. Analysis complete—visual interface synchronized."
             
-        # 5. Default to Helios Chat Manager
         helios_response = helios_chat_memory_agent(query)
         return f"ARIS (Master Boss Core): {helios_response}"
         
@@ -191,12 +214,12 @@ with st.sidebar:
 # --- MAIN INTERFACE ---
 st.markdown(f"""
 <div class="aris-header">
-    <h2>⚡ ARIS // ELITE MULTI-AGENT CORE</h2>
-    <p style="margin:0; font-size:13px; color:#fca5a5;">MASTER BOSS: ARIS | ACTIVE THREAD: {st.session_state.current_thread}</p>
+    <h2>⚡ ARIS // NEON-MATRIX SUPREME CORE</h2>
+    <p style="margin:0; font-size:13px; color:#34d399;">MASTER BOSS: ARIS | ACTIVE THREAD: {st.session_state.current_thread}</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Metrics Grid showing the 5-Member Squad Status
+# Metrics Grid showing the 5-Member Squad Status in Green Glow
 col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     st.markdown('<div class="metric-card"><b>BOSS</b><br>ARIS</div>', unsafe_allow_html=True)
@@ -224,7 +247,7 @@ for msg in current_messages:
         st.markdown(msg["content"])
 
 # User Query Input
-user_query = st.chat_input("Command ARIS and his elite squad (Ask ALPHA for code, OMEGA for UI/Vision, etc.)...")
+user_query = st.chat_input("Command ARIS and his squad...")
 
 if user_query or uploaded_file:
     query_text = user_query if user_query else "Analyze this uploaded image."
@@ -237,11 +260,9 @@ if user_query or uploaded_file:
         placeholder = st.empty()
         placeholder.markdown("⚡ *ARIS is coordinating with Alpha, Helios, Omega, and MJ...*")
         
-        # Execute Master Controller with Image and Text
         final_response = aris_master_controller(query_text, uploaded_file)
             
         placeholder.markdown(final_response)
         current_messages.append({"role": "assistant", "content": final_response})
         
-        # Trigger Voice Unit 'MJ' to speak out response summary
         mj_voice_agent("Task completed by the squad, Boss Mayank.")
