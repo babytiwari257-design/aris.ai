@@ -3,10 +3,12 @@ import os
 import subprocess
 from PIL import Image
 from groq import Groq
+import base64
+import io
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // Cyber-Blue Matrix Core",
+    page_title="ARIS // Vision-Matrix Supreme Core",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -36,7 +38,7 @@ st.markdown("""
     }
     .metric-card {
         background-color: #0f172a;
-        border: 1px solid #1e293b;
+        border: 1px solid #1f2937;
         padding: 12px;
         border-radius: 8px;
         text-align: center;
@@ -100,7 +102,7 @@ def mj_voice_agent(text):
     except Exception:
         pass
 
-# --- AGENT 2: 'OMEGA' (Graphics, Desktop & Vision Unit) ---
+# --- AGENT 2: 'OMEGA' (Graphics & Desktop Unit) ---
 def omega_graphics_desktop_agent(query):
     try:
         q_lower = query.lower()
@@ -117,7 +119,50 @@ def omega_graphics_desktop_agent(query):
         return f"OMEGA Execution Error: {str(e)}"
     return None
 
-# --- AGENT 3: 'ALPHA' (Coding Unit with Language Match) ---
+# --- AGENT 3: 'OMEGA VISION' (Image Understanding Unit) ---
+def omega_vision_agent(query, uploaded_file, lang_instruction):
+    try:
+        api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
+        client = Groq(api_key=api_key)
+        
+        # Convert uploaded image to base64 for API
+        bytes_data = uploaded_file.getvalue()
+        base64_image = base64.b64encode(bytes_data).decode('utf-8')
+        
+        # Determine image format
+        img_type = uploaded_file.type.split("/")[-1]
+        if img_type not in ["jpeg", "png", "jpg", "webp"]:
+            img_type = "jpeg"
+
+        system_prompt = (
+            f"You are OMEGA, the elite vision and graphics unit operating under master boss ARIS, engineered by Mayank. "
+            f"Analyze the provided image carefully and answer the user's question about it in detail. {lang_instruction}"
+        )
+        
+        completion = client.chat.completions.create(
+            model="llama-3.2-11b-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": f"{system_prompt}\n\nUser Question: {query}"},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/{img_type};base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            temperature=0.7,
+            max_tokens=1024
+        )
+        return f"OMEGA (Vision Unit):\n\n{completion.choices[0].message.content}"
+    except Exception as e:
+        return f"OMEGA Vision Error: {str(e)}"
+
+# --- AGENT 4: 'ALPHA' (Coding Unit) ---
 def alpha_coding_agent(query, user_lang_instruction):
     try:
         api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
@@ -137,7 +182,7 @@ def alpha_coding_agent(query, user_lang_instruction):
     except Exception as e:
         return f"ALPHA Coding Error: {str(e)}"
 
-# --- AGENT 4: 'HELIOS' (Chat Manager with Language Match) ---
+# --- AGENT 5: 'HELIOS' (Chat Manager Unit) ---
 def helios_chat_memory_agent(query, user_lang_instruction):
     try:
         api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
@@ -162,7 +207,7 @@ def aris_master_controller(query, uploaded_image=None):
     try:
         q_lower = query.lower() if query else ""
         
-        hindi_keywords = ["kya", "kaise", "batao", "likho", "hain", "hai", "kaun", "karo", "yeh", "woh", "mujhe", "mera"]
+        hindi_keywords = ["kya", "kaise", "batao", "likho", "hain", "hai", "kaun", "karo", "yeh", "woh", "mujhe", "mera", "dekho"]
         is_hindi = any(word in q_lower for word in hindi_keywords) or any(ord(c) > 127 for c in query)
         
         if is_hindi:
@@ -179,12 +224,13 @@ def aris_master_controller(query, uploaded_image=None):
         if omega_result:
             return omega_result
             
+        # If image is uploaded, trigger Omega Vision Agent
+        if uploaded_image is not None:
+            return omega_vision_agent(query, uploaded_image, lang_instruction)
+            
         coding_keywords = ["code", "script", "program", "function", "python", "html", "css", "bug", "error", "bana ke do", "likho"]
         if any(keyword in q_lower for keyword in coding_keywords) or q_lower.startswith("write "):
             return alpha_coding_agent(query, lang_instruction)
-            
-        if uploaded_image is not None:
-            return "OMEGA (Vision Unit): Image successfully analyze ho gayi hai, Boss Mayank!" if is_hindi else "OMEGA (Vision Unit): Image received and analyzed successfully, Boss Mayank."
             
         return helios_chat_memory_agent(query, lang_instruction)
         
@@ -195,7 +241,6 @@ def aris_master_controller(query, uploaded_image=None):
 with st.sidebar:
     st.markdown("### 🎛️ ARIS COMMAND CENTER")
     
-    # New Thread Input
     new_thread = st.text_input("Thread Name", placeholder="e.g., Project Alpha...")
     if st.button("➕ New Neural Thread", use_container_width=True):
         if new_thread and new_thread not in st.session_state.threads:
@@ -203,7 +248,6 @@ with st.sidebar:
             st.session_state.current_thread = new_thread
             st.rerun()
 
-    # Purge Active Session Button Added Back
     if st.button("🗑️ Purge Active Session", use_container_width=True):
         st.session_state.threads[st.session_state.current_thread] = []
         st.rerun()
@@ -226,7 +270,7 @@ with st.sidebar:
 # --- MAIN INTERFACE ---
 st.markdown(f"""
 <div class="aris-header">
-    <h2>⚡ ARIS // CYBER-BLUE SUPREME CORE</h2>
+    <h2>⚡ ARIS // VISION-MATRIX SUPREME CORE</h2>
     <p style="margin:0; font-size:13px; color:#38bdf8;">MASTER BOSS: ARIS | ACTIVE THREAD: {st.session_state.current_thread}</p>
 </div>
 """, unsafe_allow_html=True)
@@ -247,10 +291,10 @@ with col5:
 st.write("")
 
 # Image Upload Widget
-uploaded_file = st.file_uploader("📤 Upload Image / Screenshot for OMEGA Vision Analysis", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("📤 Upload Image / Screenshot for OMEGA Vision Analysis", type=["jpg", "jpeg", "png", "webp"])
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Target Image Loaded for OMEGA", width=300)
+    st.image(image, caption="Target Image Loaded for OMEGA Vision", width=300)
 
 # Chat Display
 current_messages = st.session_state.threads[st.session_state.current_thread]
@@ -259,10 +303,10 @@ for msg in current_messages:
         st.markdown(msg["content"])
 
 # User Query Input
-user_query = st.chat_input("Command ARIS and his squad...")
+user_query = st.chat_input("Command ARIS and his squad (Ask about images, code, etc.)...")
 
 if user_query or uploaded_file:
-    query_text = user_query if user_query else "Analyze this uploaded image."
+    query_text = user_query if user_query else "Analyze this uploaded image and explain it."
     
     current_messages.append({"role": "user", "content": query_text})
     with st.chat_message("user"):
@@ -270,7 +314,7 @@ if user_query or uploaded_file:
 
     with st.chat_message("assistant"):
         placeholder = st.empty()
-        placeholder.markdown("⚡ *ARIS is coordinating with Alpha, Helios, Omega, and MJ...*")
+        placeholder.markdown("⚡ *ARIS is coordinating with Alpha, Helios, Omega (Vision), and MJ...*")
         
         final_response = aris_master_controller(query_text, uploaded_file)
             
