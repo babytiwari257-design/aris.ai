@@ -183,7 +183,7 @@ def aris_master_controller(query, uploaded_image=None):
         if any(keyword in q_lower for keyword in coding_keywords) or q_lower.startswith("write "):
             return alpha_coding_agent(query, lang_instruction)
             
-        if uploaded_file is not None:
+        if uploaded_image is not None:
             return "OMEGA (Vision Unit): Image successfully analyze ho gayi hai, Boss Mayank!" if is_hindi else "OMEGA (Vision Unit): Image received and analyzed successfully, Boss Mayank."
             
         return helios_chat_memory_agent(query, lang_instruction)
@@ -194,12 +194,19 @@ def aris_master_controller(query, uploaded_image=None):
 # --- SIDEBAR CONTROL DECK ---
 with st.sidebar:
     st.markdown("### 🎛️ ARIS COMMAND CENTER")
+    
+    # New Thread Input
     new_thread = st.text_input("Thread Name", placeholder="e.g., Project Alpha...")
-    if st.button("➕ Create Boss Thread", use_container_width=True):
+    if st.button("➕ New Neural Thread", use_container_width=True):
         if new_thread and new_thread not in st.session_state.threads:
             st.session_state.threads[new_thread] = []
             st.session_state.current_thread = new_thread
             st.rerun()
+
+    # Purge Active Session Button Added Back
+    if st.button("🗑️ Purge Active Session", use_container_width=True):
+        st.session_state.threads[st.session_state.current_thread] = []
+        st.rerun()
 
     st.markdown("---")
     st.markdown("💬 **Active Threads**")
@@ -211,7 +218,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("🧠 **HELIOS Memory Vault**")
     if not st.session_state.memory_vault:
-        st.caption("Vault empty.")
+        st.caption("Vault empty. Use 'remember...'")
     else:
         for mem in st.session_state.memory_vault:
             st.info(f"🔹 {mem}")
