@@ -1,109 +1,155 @@
 import streamlit as st
 import os
+import time
 import subprocess
 from PIL import Image
-from groq import Groq
-import base64
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
 
-# --- PAGE CONFIGURATION ---
+# --- SIVUN KONFIGURAATIO / MATRIX CONFIG ---
 st.set_page_config(
-    page_title="ARIS // Vision-Matrix Supreme Core",
-    page_icon="⚡",
+    page_title="ARIS // JARVIS Matrix Supreme",
+    page_icon="💠",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- ADVANCED CYBERPUNK & NEON BLUE/GREEN CSS STYLING ---
+# --- CYBERPUNK / JARVIS HUD TYYLIT ---
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
     .stApp {
-        background-color: #05070b;
-        color: #e2e8f0;
+        background: radial-gradient(circle at 50% 20%, #03121e 0%, #010408 100%);
+        color: #d1ecf1;
+        font-family: 'Rajdhani', sans-serif;
     }
+
     [data-testid="stSidebar"] {
-        background-color: #030406;
-        border-right: 1px solid #1e293b;
+        background: rgba(2, 8, 16, 0.95);
+        border-right: 1px solid rgba(0, 243, 255, 0.2);
+        box-shadow: 4px 0 25px rgba(0, 243, 255, 0.05);
     }
-    .aris-header {
-        background: linear-gradient(90deg, #dc2626 0%, #0284c7 100%);
-        padding: 20px;
+
+    .jarvis-header {
+        background: linear-gradient(135deg, rgba(4, 30, 48, 0.9) 0%, rgba(2, 12, 24, 0.95) 100%);
+        border: 1px solid #00f3ff;
         border-radius: 12px;
-        color: white;
+        padding: 24px 20px;
         text-align: center;
-        font-weight: 800;
-        letter-spacing: 2px;
-        box-shadow: 0 4px 25px rgba(2, 132, 199, 0.3);
-        margin-bottom: 20px;
+        box-shadow: 0 0 35px rgba(0, 243, 255, 0.25), inset 0 0 15px rgba(0, 243, 255, 0.1);
+        margin-bottom: 25px;
     }
-    .metric-card {
-        background-color: #0f172a;
-        border: 1px solid #1f2937;
-        padding: 12px;
-        border-radius: 8px;
-        text-align: center;
+    .jarvis-title {
+        font-family: 'Orbitron', sans-serif;
+        color: #00f3ff;
+        font-size: 26px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        text-shadow: 0 0 12px rgba(0, 243, 255, 0.8);
+        margin: 0;
+    }
+    .jarvis-sub {
         color: #38bdf8;
         font-size: 13px;
+        letter-spacing: 2px;
+        margin-top: 5px;
+        text-transform: uppercase;
+    }
+
+    .hud-card {
+        background: rgba(4, 18, 30, 0.85);
+        border: 1px solid rgba(0, 243, 255, 0.3);
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 11px;
+        color: #38bdf8;
+        box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.15);
+    }
+    .hud-val {
+        color: #ffffff;
+        font-size: 14px;
         font-weight: bold;
-        box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.1);
+        text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
     }
-    /* Glowing Green AI Assistant Chat Responses */
+
     [data-testid="stChatMessage"]:nth-child(even) {
-        background-color: #06120e !important;
-        border: 1px solid #059669 !important;
-        border-radius: 10px;
-        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        background: rgba(3, 22, 33, 0.8) !important;
+        border: 1px solid #00f3ff !important;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
+        font-size: 16px;
     }
-    [data-testid="stChatMessage"]:nth-child(even) p, 
-    [data-testid="stChatMessage"]:nth-child(even) span, 
-    [data-testid="stChatMessage"]:nth-child(even) li {
-        color: #34d399 !important;
-        font-weight: 500;
+    [data-testid="stChatMessage"]:nth-child(even) p,
+    [data-testid="stChatMessage"]:nth-child(even) li,
+    [data-testid="stChatMessage"]:nth-child(even) span {
+        color: #e0f7fa !important;
     }
-    /* Neon Blue User Chat Bubbles */
+
     [data-testid="stChatMessage"]:nth-child(odd) {
-        background-color: #082f49 !important;
+        background: rgba(10, 31, 56, 0.7) !important;
         border: 1px solid #0284c7 !important;
-        border-radius: 10px;
-        box-shadow: 0 0 15px rgba(2, 132, 199, 0.2);
+        border-radius: 12px;
+        font-size: 16px;
     }
-    [data-testid="stChatMessage"]:nth-child(odd) p, 
-    [data-testid="stChatMessage"]:nth-child(odd) span, 
-    [data-testid="stChatMessage"]:nth-child(odd) li {
+    [data-testid="stChatMessage"]:nth-child(odd) p,
+    [data-testid="stChatMessage"]:nth-child(odd) span {
         color: #38bdf8 !important;
-        font-weight: 500;
+        font-weight: 600;
+    }
+
+    .stTextInput input, .stTextArea textarea {
+        background-color: #030d17 !important;
+        border: 1px solid #00f3ff !important;
+        color: #00f3ff !important;
+    }
+    .stButton button {
+        background: linear-gradient(90deg, #0284c7 0%, #00f3ff 100%) !important;
+        color: #010408 !important;
+        font-weight: bold !important;
+        border: none !important;
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.3) !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- CLIENT CACHE ---
+# --- GEMINI CLIENT (STRICTLY FROM SECRETS / ENV - NO HARDCODED KEY) ---
 @st.cache_resource
-def get_groq_client():
-    api_key = os.environ.get("GROQ_API_KEY")
+def get_gemini_client():
+    api_key = None
+    if "GEMINI_API_KEY" in st.secrets:
+        api_key = st.secrets["GEMINI_API_KEY"]
+    elif "GEMINI_API_KEY" in os.environ:
+        api_key = os.environ["GEMINI_API_KEY"]
+
     if not api_key:
         return None
-    return Groq(api_key=api_key)
+    return genai.Client(api_key=api_key)
 
 # --- SESSION STATES ---
 if "threads" not in st.session_state:
-    st.session_state.threads = {"Master Control Thread": []}
+    st.session_state.threads = {"Master Terminal": []}
 if "current_thread" not in st.session_state:
-    st.session_state.current_thread = "Master Control Thread"
+    st.session_state.current_thread = "Master Terminal"
 if "memory_vault" not in st.session_state:
     st.session_state.memory_vault = []
 
-# --- AGENT 1: 'MJ' (Voice / Speech Unit) ---
+# --- PUHEAGENTTI (MJ VOICE) ---
 def mj_voice_agent(text):
     try:
         clean_text = str(text).replace('"', '').replace("'", "").replace("\n", " ")
-        if len(clean_text) > 250:
-            clean_text = clean_text[:250] + " ... response continues on screen."
+        if len(clean_text) > 240:
+            clean_text = clean_text[:240] + " ... response continues on interface."
         js_code = f"""
         <script>
             if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
                 var msg = new SpeechSynthesisUtterance('{clean_text}');
-                msg.rate = 1.0;
-                msg.pitch = 0.9;
+                msg.rate = 1.05;
+                msg.pitch = 0.95;
                 window.speechSynthesis.speak(msg);
             }}
         </script>
@@ -112,8 +158,8 @@ def mj_voice_agent(text):
     except Exception:
         pass
 
-# --- AGENT 2: 'OMEGA' (Graphics & Desktop Unit) ---
-def omega_graphics_desktop_agent(query):
+# --- LOCAL DESKTOP AUTOMATION (OMEGA) ---
+def omega_desktop_agent(query):
     try:
         q_lower = query.lower()
         if "open notepad" in q_lower:
@@ -123,245 +169,206 @@ def omega_graphics_desktop_agent(query):
             os.system("start chrome")
             return "OMEGA: Web browser initiated successfully."
         elif "shutdown pc" in q_lower:
-            os.system("shutdown /s /t 5")
-            return "WARNING! OMEGA Security Unit triggered system shutdown."
+            os.system("shutdown /s /t 10")
+            return "SECURITY WARNING: System shutdown sequence armed for 10 seconds."
     except Exception as e:
         return f"OMEGA Execution Error: {str(e)}"
     return None
 
-# --- AGENT 3: 'OMEGA VISION' (Active Vision Model) ---
-def omega_vision_agent(query, uploaded_file, lang_instruction):
-    try:
-        client = get_groq_client()
-        if not client:
-            return "OMEGA Vision Error: Missing GROQ_API_KEY environment variable."
+# --- SAFE RETRY STREAMING CORE (PREVENTS 429 CRASHES) ---
+def stream_gemini_safe(client, model, contents, config, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            stream = client.models.generate_content_stream(
+                model=model,
+                contents=contents,
+                config=config
+            )
+            for chunk in stream:
+                if chunk.text:
+                    yield chunk.text
+            return
+        except APIError as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                wait_time = 2 ** (attempt + 1)
+                time.sleep(wait_time)
+            else:
+                yield f"\n\n[API ALERT]: Rate limit hit or service error: {str(e)}"
+                return
+        except Exception as e:
+            yield f"\n\n[CORE ERROR]: {str(e)}"
+            return
 
+# --- MASTER CONTROLLER (ARIS / JARVIS) ---
+def run_jarvis_core_stream(query, uploaded_file=None):
+    client = get_gemini_client()
+    if not client:
+        yield "SYSTEM ERROR: GEMINI_API_KEY nahi mili! Streamlit Cloud ke Settings -> Secrets me GEMINI_API_KEY daalein."
+        return
+
+    q_lower = query.lower() if query else ""
+
+    # Detect Hindi/Hinglish
+    hindi_keywords = ["kya", "kaise", "batao", "likho", "hain", "hai", "kaun", "karo", "yeh", "woh", "mujhe", "mera", "dekho"]
+    is_hindi = any(word in q_lower for word in hindi_keywords) or any(ord(c) > 127 for c in query)
+
+    # Memory Persistence
+    if q_lower.startswith("remember "):
+        fact = query[9:].strip()
+        if fact and fact not in st.session_state.memory_vault:
+            st.session_state.memory_vault.append(fact)
+        ack = (
+            f"ARIS (Jarvis Core): Fact stored in the neural memory vault: '{fact}'."
+            if not is_hindi else
+            f"ARIS: Memory vault me yeh fact secure ho chuka hai, Boss: '{fact}'."
+        )
+        yield ack
+        return
+
+    # Desktop Ops
+    desktop_cmd = omega_desktop_agent(query)
+    if desktop_cmd:
+        yield desktop_cmd
+        return
+
+    # Directives
+    lang_directive = (
+        "User is communicating in Hindi/Hinglish. Respond in smart, witty, respectful Hinglish like Jarvis speaking with Boss."
+        if is_hindi else
+        "User is communicating in English. Speak in a sharp, articulate, high-IQ British Jarvis tone, addressing the user as Boss or Sir."
+    )
+
+    memories = st.session_state.get("memory_vault", [])
+    memory_context = "\n".join([f"- {m}" for m in memories]) if memories else "No explicit records yet."
+
+    system_prompt = f"""
+You are ARIS // JARVIS-Supreme, an elite AI entity engineered by Mayank.
+Your faculties:
+- Multi-dimensional Reasoning & Strategic Architecture
+- Software Engineering & Code Optimizations (Alpha Unit)
+- Visual Perception & Diagnostic Telemetry (Omega Vision)
+- Tactical Memory Vault Access (Helios)
+
+Tone & Style: Confident, fast, razor-sharp intelligence, sophisticated, polite, and loyal to Boss.
+{lang_directive}
+
+[NEURAL MEMORY VAULT]:
+{memory_context}
+"""
+
+    content_parts = []
+    if uploaded_file is not None:
         bytes_data = uploaded_file.getvalue()
-        base64_image = base64.b64encode(bytes_data).decode('utf-8')
-        
-        img_type = uploaded_file.type.split("/")[-1].lower()
-        if img_type not in ["jpeg", "png", "jpg", "webp"]:
-            img_type = "jpeg"
+        mime_type = uploaded_file.type or "image/jpeg"
+        content_parts.append(types.Part.from_bytes(data=bytes_data, mime_type=mime_type))
 
-        system_prompt = (
-            f"You are OMEGA, the elite vision unit operating under master boss ARIS, engineered by Mayank. "
-            f"Analyze the visual input accurately and answer the question in detail. {lang_instruction}"
-        )
-        
-        model_name = "llama-3.2-11b-vision-instant"
+    content_parts.append(query)
 
-        completion = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": f"{system_prompt}\n\nTask: {query}"},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/{img_type};base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            temperature=0.4,
-            max_tokens=1024
-        )
-        return f"OMEGA (Vision Unit - {model_name}):\n\n{completion.choices[0].message.content}"
-    except Exception as e:
-        return f"OMEGA Vision Error: {str(e)}"
+    config = types.GenerateContentConfig(
+        system_instruction=system_prompt,
+        temperature=0.4,
+        max_output_tokens=3000
+    )
 
-# --- AGENT 4: 'ALPHA' (Coding Unit) ---
-def alpha_coding_agent(query, user_lang_instruction):
-    try:
-        client = get_groq_client()
-        if not client:
-            return "ALPHA Error: Missing GROQ_API_KEY environment variable."
-
-        system_prompt = (
-            f"You are ALPHA, an elite coding unit under master boss ARIS, engineered by Mayank. "
-            f"Write robust, optimized, and cleanly structured code. {user_lang_instruction}"
-        )
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query}
-            ],
-            temperature=0.2
-        )
-        return f"ALPHA (Elite Coding Unit):\n\n{completion.choices[0].message.content}"
-    except Exception as e:
-        return f"ALPHA Coding Error: {str(e)}"
-
-# --- AGENT 5: 'HELIOS' (Chat Manager with Dynamic Memory Vault Injection) ---
-def helios_chat_memory_agent(query, user_lang_instruction):
-    try:
-        client = get_groq_client()
-        if not client:
-            return "HELIOS Error: Missing GROQ_API_KEY environment variable."
-
-        # Compile persistent memories stored in the vault
-        memory_vault = st.session_state.get("memory_vault", [])
-        if memory_vault:
-            formatted_memories = "\n".join([f"- {fact}" for fact in memory_vault])
-            memory_context = (
-                f"\n\n[MEMORY VAULT - PERSISTENT CONTEXT]:\n"
-                f"You have access to the following saved user facts in your memory bank. "
-                f"Seamlessly incorporate and acknowledge these facts whenever relevant:\n"
-                f"{formatted_memories}\n"
-            )
-        else:
-            memory_context = "\n\n[MEMORY VAULT]: Empty (No prior user facts recorded)."
-
-        system_prompt = (
-            f"You are HELIOS, chat manager operating under master boss ARIS, engineered by Mayank. "
-            f"{user_lang_instruction}"
-            f"{memory_context}"
-        )
-
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query}
-            ],
-            temperature=0.7
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        return f"HELIOS Chat Manager Error: {str(e)}"
-
-# --- MASTER BOSS: 'ARIS' (Orchestrator) ---
-def aris_master_controller(query, uploaded_image=None):
-    try:
-        q_lower = query.lower() if query else ""
-        
-        hindi_keywords = ["kya", "kaise", "batao", "likho", "hain", "hai", "kaun", "karo", "yeh", "woh", "mujhe", "mera", "dekho"]
-        is_hindi = any(word in q_lower for word in hindi_keywords) or any(ord(c) > 127 for c in query)
-        
-        if is_hindi:
-            lang_instruction = "User is communicating in Hindi/Hinglish. You MUST reply strictly in conversational Hinglish/Hindi with a smart techy tone."
-        else:
-            lang_instruction = "User is communicating in English. Reply in clear, professional English."
-
-        # Recording logic for "remember ..."
-        if q_lower.startswith("remember "):
-            fact = query[9:].strip()
-            if fact and fact not in st.session_state.memory_vault:
-                st.session_state.memory_vault.append(fact)
-            return (
-                f"ARIS (Master Boss): Helios ne yeh memory vault mein successfully inject kar liya hai: '{fact}'" 
-                if is_hindi else 
-                f"ARIS (Master Boss): Helios has permanently indexed this fact in the Memory Vault: '{fact}'"
-            )
-            
-        omega_result = omega_graphics_desktop_agent(query)
-        if omega_result:
-            return omega_result
-            
-        if uploaded_image is not None:
-            return omega_vision_agent(query, uploaded_image, lang_instruction)
-            
-        coding_keywords = ["code", "script", "program", "function", "python", "html", "css", "bug", "error", "bana ke do", "likho"]
-        if any(keyword in q_lower for keyword in coding_keywords) or q_lower.startswith("write "):
-            return alpha_coding_agent(query, lang_instruction)
-            
-        return helios_chat_memory_agent(query, lang_instruction)
-        
-    except Exception as e:
-        return f"ARIS System Core Error: {str(e)}"
+    for chunk in stream_gemini_safe(
+        client=client,
+        model="gemini-2.5-flash",
+        contents=content_parts,
+        config=config,
+        max_retries=3
+    ):
+        yield chunk
 
 # --- SIDEBAR CONTROL DECK ---
 with st.sidebar:
-    st.markdown("### 🎛️ ARIS COMMAND CENTER")
-    
-    new_thread = st.text_input("Thread Name", placeholder="e.g., Project Alpha...")
-    if st.button("➕ New Neural Thread", use_container_width=True):
+    st.markdown("### 💠 ARIS COMMAND DECK")
+
+    new_thread = st.text_input("New Protocol", placeholder="Project Obsidian...")
+    if st.button("⚡ Initialize Neural Thread", use_container_width=True):
         if new_thread and new_thread not in st.session_state.threads:
             st.session_state.threads[new_thread] = []
             st.session_state.current_thread = new_thread
             st.rerun()
 
-    if st.button("🗑️️ Purge Active Session", use_container_width=True):
+    if st.button("🗑️ Purge Thread Memory", use_container_width=True):
         st.session_state.threads[st.session_state.current_thread] = []
         st.rerun()
 
     st.markdown("---")
-    st.markdown("💬 **Active Threads**")
+    st.markdown("📡 **Active Data Streams**")
     for t_name in list(st.session_state.threads.keys()):
-        if st.button(f"📂 {t_name}", use_container_width=True, key=f"th_{t_name}"):
+        active_marker = "🟢" if t_name == st.session_state.current_thread else "⚪"
+        if st.button(f"{active_marker} {t_name}", use_container_width=True, key=f"th_{t_name}"):
             st.session_state.current_thread = t_name
             st.rerun()
 
     st.markdown("---")
-    st.markdown("🧠 **HELIOS Memory Vault**")
+    st.markdown("🧠 **Neural Memory Vault**")
     if not st.session_state.memory_vault:
-        st.caption("Vault empty. Command 'remember <fact>' to persist data.")
+        st.caption("Vault empty. Command 'remember <fact>' to persist.")
     else:
         for idx, mem in enumerate(st.session_state.memory_vault):
-            col_mem, col_del = st.columns([5, 1])
-            with col_mem:
+            col_m, col_d = st.columns([5, 1])
+            with col_m:
                 st.info(f"🔹 {mem}")
-            with col_del:
+            with col_d:
                 if st.button("✖", key=f"del_mem_{idx}"):
                     st.session_state.memory_vault.pop(idx)
                     st.rerun()
 
-# --- MAIN INTERFACE ---
+# --- MAIN INTERFACE HUD ---
 st.markdown(f"""
-<div class="aris-header">
-    <h2>⚡ ARIS // VISION-MATRIX SUPREME CORE</h2>
-    <p style="margin:0; font-size:13px; color:#38bdf8;">MASTER BOSS: ARIS | ACTIVE THREAD: {st.session_state.current_thread}</p>
+<div class="jarvis-header">
+    <h1 class="jarvis-title">ARIS // JARVIS CORE</h1>
+    <div class="jarvis-sub">TACTICAL AI MATRIX | GEMINI 2.5 FLASH | STREAM: {st.session_state.current_thread}</div>
 </div>
 """, unsafe_allow_html=True)
 
-# Metrics Grid
-col1, col2, col3, col4, col5 = st.columns(5)
-with col1:
-    st.markdown('<div class="metric-card"><b>BOSS</b><br>ARIS</div>', unsafe_allow_html=True)
-with col2:
-    st.markdown(f'<div class="metric-card"><b>CHAT</b><br>HELIOS ({len(st.session_state.memory_vault)} facts)</div>', unsafe_allow_html=True)
-with col3:
-    st.markdown('<div class="metric-card"><b>VISION</b><br>OMEGA (Vision Inst.)</div>', unsafe_allow_html=True)
-with col4:
-    st.markdown('<div class="metric-card"><b>CODING</b><br>ALPHA (Llama 3.3)</div>', unsafe_allow_html=True)
-with col5:
-    st.markdown('<div class="metric-card"><b>VOICE</b><br>MJ</div>', unsafe_allow_html=True)
+# Telemetry cards
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown('<div class="hud-card">STATUS<div class="hud-val">ONLINE 100%</div></div>', unsafe_allow_html=True)
+with c2:
+    st.markdown('<div class="hud-card">NEURAL CORE<div class="hud-val">GEMINI 2.5</div></div>', unsafe_allow_html=True)
+with c3:
+    st.markdown(f'<div class="hud-card">MEMORY VAULT<div class="hud-val">{len(st.session_state.memory_vault)} ENTRIES</div></div>', unsafe_allow_html=True)
+with c4:
+    st.markdown('<div class="hud-card">TELEMETRY<div class="hud-val">STREAM ACTIVE</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# Image Upload Widget
-uploaded_file = st.file_uploader("📤 Upload Image / Screenshot for OMEGA Vision Analysis", type=["jpg", "jpeg", "png", "webp"])
+# Diagnostic image upload
+uploaded_file = st.file_uploader("📤 Multimodal Visual Feed (OCR / Target Inspection)", type=["jpg", "jpeg", "png", "webp"])
 if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Target Image Loaded for OMEGA Vision", width=300)
+    img = Image.open(uploaded_file)
+    st.image(img, caption="Optical Sensor Input Locked", width=320)
 
-# Chat Display
+# Message timeline
 current_messages = st.session_state.threads[st.session_state.current_thread]
 for msg in current_messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# User Query Input
-user_query = st.chat_input("Command ARIS and his squad...")
+# User Command Input
+user_query = st.chat_input("Command Jarvis Core...")
 
 if user_query or (uploaded_file and len(current_messages) == 0):
-    query_text = user_query if user_query else "Analyze this uploaded image and explain it."
-    
+    query_text = user_query if user_query else "Diagnostic scan: Analyze this optical feed and report."
+
     current_messages.append({"role": "user", "content": query_text})
     with st.chat_message("user"):
         st.markdown(query_text)
 
     with st.chat_message("assistant"):
-        placeholder = st.empty()
-        placeholder.markdown("⚡ *ARIS is coordinating with Alpha, Helios, Omega (Vision), and MJ...*")
-        
-        final_response = aris_master_controller(query_text, uploaded_file)
-            
-        placeholder.markdown(final_response)
-        current_messages.append({"role": "assistant", "content": final_response})
-        
-        mj_voice_agent(final_response)
+        stream_placeholder = st.empty()
+        full_reply = ""
+
+        # Real-time Stream with Safe Retries
+        for chunk in run_jarvis_core_stream(query_text, uploaded_file):
+            full_reply += chunk
+            stream_placeholder.markdown(full_reply + " ▌")
+
+        stream_placeholder.markdown(full_reply)
+        current_messages.append({"role": "assistant", "content": full_reply})
+
+        mj_voice_agent(full_reply)
