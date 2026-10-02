@@ -1,8 +1,3 @@
 streamlit
-groq
-streamlit-mic-recorder
-duckduckgo-search
-pypdf
-chromadb
-pyttsx3
-pyautogui
+google-genai
+pillow
