@@ -46,7 +46,7 @@ st.markdown("""
         font-weight: bold;
         box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.1);
     }
-    /* Glowing Green AI Assistant Chat Responses (Even child) */
+    /* Glowing Green AI Assistant Chat Responses */
     [data-testid="stChatMessage"]:nth-child(even) {
         background-color: #06120e !important;
         border: 1px solid #059669 !important;
@@ -59,7 +59,7 @@ st.markdown("""
         color: #34d399 !important;
         font-weight: 500;
     }
-    /* Neon Blue User Chat Bubbles (Odd child) */
+    /* Neon Blue User Chat Bubbles */
     [data-testid="stChatMessage"]:nth-child(odd) {
         background-color: #082f49 !important;
         border: 1px solid #0284c7 !important;
@@ -75,6 +75,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- CLIENT CACHE ---
+@st.cache_resource
+def get_groq_client():
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return None
+    return Groq(api_key=api_key)
+
 # --- SESSION STATES ---
 if "threads" not in st.session_state:
     st.session_state.threads = {"Master Control Thread": []}
@@ -87,14 +95,17 @@ if "memory_vault" not in st.session_state:
 def mj_voice_agent(text):
     try:
         clean_text = str(text).replace('"', '').replace("'", "").replace("\n", " ")
-        if len(clean_text) > 300:
-            clean_text = clean_text[:300] + " ... response continues on screen."
+        if len(clean_text) > 250:
+            clean_text = clean_text[:250] + " ... response continues on screen."
         js_code = f"""
         <script>
-            var msg = new SpeechSynthesisUtterance('{clean_text}');
-            msg.rate = 1.0;
-            msg.pitch = 0.9;
-            window.speechSynthesis.speak(msg);
+            if ('speechSynthesis' in window) {{
+                window.speechSynthesis.cancel();
+                var msg = new SpeechSynthesisUtterance('{clean_text}');
+                msg.rate = 1.0;
+                msg.pitch = 0.9;
+                window.speechSynthesis.speak(msg);
+            }}
         </script>
         """
         st.components.v1.html(js_code, height=0, width=0)
@@ -118,32 +129,34 @@ def omega_graphics_desktop_agent(query):
         return f"OMEGA Execution Error: {str(e)}"
     return None
 
-# --- AGENT 3: 'OMEGA VISION' (Image Understanding Unit - Updated Model) ---
+# --- AGENT 3: 'OMEGA VISION' (Active Vision Model) ---
 def omega_vision_agent(query, uploaded_file, lang_instruction):
     try:
-        api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
-        client = Groq(api_key=api_key)
-        
+        client = get_groq_client()
+        if not client:
+            return "OMEGA Vision Error: Missing GROQ_API_KEY environment variable."
+
         bytes_data = uploaded_file.getvalue()
         base64_image = base64.b64encode(bytes_data).decode('utf-8')
         
-        img_type = uploaded_file.type.split("/")[-1]
+        img_type = uploaded_file.type.split("/")[-1].lower()
         if img_type not in ["jpeg", "png", "jpg", "webp"]:
             img_type = "jpeg"
 
         system_prompt = (
-            f"You are OMEGA, the elite vision and graphics unit operating under master boss ARIS, engineered by Mayank. "
-            f"Analyze the provided image carefully and answer the user's question about it in detail. {lang_instruction}"
+            f"You are OMEGA, the elite vision unit operating under master boss ARIS, engineered by Mayank. "
+            f"Analyze the visual input accurately and answer the question in detail. {lang_instruction}"
         )
         
-        # Updated to the active vision model endpoint
+        model_name = "llama-3.2-11b-vision-instant"
+
         completion = client.chat.completions.create(
-            model="llama-3.2-90b-vision-preview",
+            model=model_name,
             messages=[
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": f"{system_prompt}\n\nUser Question: {query}"},
+                        {"type": "text", "text": f"{system_prompt}\n\nTask: {query}"},
                         {
                             "type": "image_url",
                             "image_url": {
@@ -153,48 +166,69 @@ def omega_vision_agent(query, uploaded_file, lang_instruction):
                     ]
                 }
             ],
-            temperature=0.7,
+            temperature=0.4,
             max_tokens=1024
         )
-        return f"OMEGA (Vision Unit):\n\n{completion.choices[0].message.content}"
+        return f"OMEGA (Vision Unit - {model_name}):\n\n{completion.choices[0].message.content}"
     except Exception as e:
         return f"OMEGA Vision Error: {str(e)}"
 
 # --- AGENT 4: 'ALPHA' (Coding Unit) ---
 def alpha_coding_agent(query, user_lang_instruction):
     try:
-        api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
-        client = Groq(api_key=api_key)
+        client = get_groq_client()
+        if not client:
+            return "ALPHA Error: Missing GROQ_API_KEY environment variable."
+
         system_prompt = (
             f"You are ALPHA, an elite coding unit under master boss ARIS, engineered by Mayank. "
-            f"Write optimized, bug-free code. {user_lang_instruction}"
+            f"Write robust, optimized, and cleanly structured code. {user_lang_instruction}"
         )
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": query}
-            ]
+            ],
+            temperature=0.2
         )
         return f"ALPHA (Elite Coding Unit):\n\n{completion.choices[0].message.content}"
     except Exception as e:
         return f"ALPHA Coding Error: {str(e)}"
 
-# --- AGENT 5: 'HELIOS' (Chat Manager Unit) ---
+# --- AGENT 5: 'HELIOS' (Chat Manager with Dynamic Memory Vault Injection) ---
 def helios_chat_memory_agent(query, user_lang_instruction):
     try:
-        api_key = os.environ.get("GROQ_API_KEY") or "YOUR_GROQ_API_KEY"
-        client = Groq(api_key=api_key)
+        client = get_groq_client()
+        if not client:
+            return "HELIOS Error: Missing GROQ_API_KEY environment variable."
+
+        # Compile persistent memories stored in the vault
+        memory_vault = st.session_state.get("memory_vault", [])
+        if memory_vault:
+            formatted_memories = "\n".join([f"- {fact}" for fact in memory_vault])
+            memory_context = (
+                f"\n\n[MEMORY VAULT - PERSISTENT CONTEXT]:\n"
+                f"You have access to the following saved user facts in your memory bank. "
+                f"Seamlessly incorporate and acknowledge these facts whenever relevant:\n"
+                f"{formatted_memories}\n"
+            )
+        else:
+            memory_context = "\n\n[MEMORY VAULT]: Empty (No prior user facts recorded)."
+
         system_prompt = (
             f"You are HELIOS, chat manager operating under master boss ARIS, engineered by Mayank. "
             f"{user_lang_instruction}"
+            f"{memory_context}"
         )
+
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": query}
-            ]
+            ],
+            temperature=0.7
         )
         return completion.choices[0].message.content
     except Exception as e:
@@ -213,10 +247,16 @@ def aris_master_controller(query, uploaded_image=None):
         else:
             lang_instruction = "User is communicating in English. Reply in clear, professional English."
 
+        # Recording logic for "remember ..."
         if q_lower.startswith("remember "):
             fact = query[9:].strip()
-            st.session_state.memory_vault.append(fact)
-            return f"ARIS (Master Boss): Helios ne yeh memory vault mein successfully save kar liya hai: '{fact}'" if is_hindi else f"ARIS (Master Boss): Helios has successfully recorded this in the Memory Vault: '{fact}'"
+            if fact and fact not in st.session_state.memory_vault:
+                st.session_state.memory_vault.append(fact)
+            return (
+                f"ARIS (Master Boss): Helios ne yeh memory vault mein successfully inject kar liya hai: '{fact}'" 
+                if is_hindi else 
+                f"ARIS (Master Boss): Helios has permanently indexed this fact in the Memory Vault: '{fact}'"
+            )
             
         omega_result = omega_graphics_desktop_agent(query)
         if omega_result:
@@ -245,7 +285,7 @@ with st.sidebar:
             st.session_state.current_thread = new_thread
             st.rerun()
 
-    if st.button("🗑️ Purge Active Session", use_container_width=True):
+    if st.button("🗑️️ Purge Active Session", use_container_width=True):
         st.session_state.threads[st.session_state.current_thread] = []
         st.rerun()
 
@@ -259,10 +299,16 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("🧠 **HELIOS Memory Vault**")
     if not st.session_state.memory_vault:
-        st.caption("Vault empty. Use 'remember...'")
+        st.caption("Vault empty. Command 'remember <fact>' to persist data.")
     else:
-        for mem in st.session_state.memory_vault:
-            st.info(f"🔹 {mem}")
+        for idx, mem in enumerate(st.session_state.memory_vault):
+            col_mem, col_del = st.columns([5, 1])
+            with col_mem:
+                st.info(f"🔹 {mem}")
+            with col_del:
+                if st.button("✖", key=f"del_mem_{idx}"):
+                    st.session_state.memory_vault.pop(idx)
+                    st.rerun()
 
 # --- MAIN INTERFACE ---
 st.markdown(f"""
@@ -277,11 +323,11 @@ col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     st.markdown('<div class="metric-card"><b>BOSS</b><br>ARIS</div>', unsafe_allow_html=True)
 with col2:
-    st.markdown('<div class="metric-card"><b>CHAT</b><br>HELIOS</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card"><b>CHAT</b><br>HELIOS ({len(st.session_state.memory_vault)} facts)</div>', unsafe_allow_html=True)
 with col3:
-    st.markdown('<div class="metric-card"><b>VISION/UI</b><br>OMEGA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card"><b>VISION</b><br>OMEGA (Vision Inst.)</div>', unsafe_allow_html=True)
 with col4:
-    st.markdown('<div class="metric-card"><b>CODING</b><br>ALPHA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card"><b>CODING</b><br>ALPHA (Llama 3.3)</div>', unsafe_allow_html=True)
 with col5:
     st.markdown('<div class="metric-card"><b>VOICE</b><br>MJ</div>', unsafe_allow_html=True)
 
@@ -302,7 +348,7 @@ for msg in current_messages:
 # User Query Input
 user_query = st.chat_input("Command ARIS and his squad...")
 
-if user_query or uploaded_file:
+if user_query or (uploaded_file and len(current_messages) == 0):
     query_text = user_query if user_query else "Analyze this uploaded image and explain it."
     
     current_messages.append({"role": "user", "content": query_text})
