@@ -9,7 +9,7 @@ from google.genai.errors import APIError
 
 # --- SIVUN KONFIGURAATIO / MATRIX CONFIG ---
 st.set_page_config(
-    page_title="ARIS // JARVIS Matrix Supreme",
+    page_title="ARIS  Matrix Supreme",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="expanded"
