@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- COMBAT HUD WAR-ROOM STYLING ---
+# --- COMBAT HUD STYLING ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -63,9 +63,12 @@ st.markdown("""
     }
     .telemetry-val {
         color: #ffffff;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: bold;
         text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     [data-testid="stChatMessage"]:nth-child(even) {
@@ -87,14 +90,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- LONG TERM PERSISTENT MEMORY VAULT ---
+# --- MEMORY VAULT ---
 MEMORY_FILE = "aris_longterm_vault.json"
 
 def load_longterm_memory():
     defaults = [
         "Supreme Commander: Mayank (Boss).",
-        "Identity Protocol: ARIS, private tactical AI partner.",
-        "Tone Directive: Natural, witty, human-like Hinglish."
+        "Identity Protocol: ARIS, exclusive tactical AI partner.",
+        "Communication Rule: Natural, witty, human-like Hinglish."
     ]
     if os.path.exists(MEMORY_FILE):
         try:
@@ -119,7 +122,7 @@ if "memory_vault" not in st.session_state:
 if "manual_key" not in st.session_state:
     st.session_state.manual_key = ""
 
-# --- CLIENT INIT ---
+# --- GROQ CLIENT RETRIEVER ---
 def get_groq_client():
     api_key = (
         st.session_state.get("manual_key", "")
@@ -130,10 +133,50 @@ def get_groq_client():
         return None
     return Groq(api_key=api_key.strip())
 
-# HARDCODED ROCK-SOLID MODEL (NO ARABIC / NO TERMS ISSUE)
-ACTIVE_MODEL = "llama-3.3-70b-versatile"
+# --- DYNAMIC ACTIVE TEXT MODEL DISCOVERY ---
+@st.cache_data(ttl=900)
+def discover_usable_models():
+    client = get_groq_client()
+    # Preferred order of modern Groq models
+    priority_order = [
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "qwen/qwen3.8-27b",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant"
+    ]
+    if not client:
+        return priority_order
 
-# --- 3D INTERACTIVE HOLO-REACTOR & AUDIO ENGINE ---
+    try:
+        live_catalog = client.models.list()
+        all_ids = [m.id for m in live_catalog.data if getattr(m, 'active', True)]
+
+        # Filter out audio, whisper, safety guard, or external terms models
+        clean_models = [
+            m_id for m_id in all_ids
+            if not any(blocked in m_id.lower() for blocked in [
+                "whisper", "guard", "orpheus", "prompt-guard", "safeguard", "compound"
+            ])
+        ]
+
+        # Prioritize matching models
+        sorted_models = []
+        for pref in priority_order:
+            if pref in clean_models:
+                sorted_models.append(pref)
+        for m_id in clean_models:
+            if m_id not in sorted_models:
+                sorted_models.append(m_id)
+
+        return sorted_models if sorted_models else priority_order
+    except Exception:
+        return priority_order
+
+active_models_list = discover_usable_models()
+primary_model_name = active_models_list[0] if active_models_list else "openai/gpt-oss-120b"
+
+# --- 3D INTERACTIVE HOLO-REACTOR & VOICE MIC ---
 holo_reactor_html = """
 <!DOCTYPE html>
 <html>
@@ -281,7 +324,7 @@ def aris_speak(text):
 st.markdown(f"""
 <div class="hud-title-box">
     <h1 class="hud-title">ARIS // TACTICAL MATRIX</h1>
-    <div class="hud-subtitle">COMMANDER IN CHIEF: BOSS | NEURAL ENGINE: {ACTIVE_MODEL.upper()}</div>
+    <div class="hud-subtitle">COMMANDER IN CHIEF: BOSS | ENGINE: {primary_model_name.upper()}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -291,21 +334,21 @@ components.html(holo_reactor_html, height=235)
 # Telemetry Cards
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.markdown('<div class="telemetry-card">STATUS<div class="telemetry-val">LOCKED & READY</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">STATUS<div class="telemetry-val">ONLINE 100%</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown(f'<div class="telemetry-card">CORE ENGINE<div class="telemetry-val">{ACTIVE_MODEL.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">ENGINE<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
 with c3:
-    st.markdown('<div class="telemetry-card">TONE<div class="telemetry-val">NATURAL HINGLISH</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">LANGUAGE<div class="telemetry-val">NATURAL HINGLISH</div></div>', unsafe_allow_html=True)
 with c4:
-    st.markdown(f'<div class="telemetry-card">LONG-TERM MEMORY<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">MEMORY VAULT<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# --- INFERENCE ENGINE (100% NATURAL CONVERSATIONAL HINGLISH) ---
+# --- INFERENCE ENGINE (FAILSAFE POOL + NATURAL PERSONA) ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
-        yield "Arre Boss, GROQ_API_KEY Secrets me nahi mili! Ek baar settings check kar lijiye."
+        yield "Arre Boss, GROQ_API_KEY Secrets me nahi mili! Ek baar check kar lijiye."
         return
 
     # Memory Logging
@@ -320,13 +363,13 @@ def run_aris_core(query):
     memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
 
     system_prompt = f"""
-You are ARIS, an ultra-smart, loyal, and witty AI companion engineered exclusively for Boss (Mayank).
+You are ARIS, an ultra-smart, loyal, witty, and human-like AI companion engineered exclusively for Boss (Mayank).
 
 COMMUNICATION RULES:
-1. NO ROBOTIC TALK: Completely avoid phrases like "Certainly!", "As an AI model", "I am an artificial intelligence", "I apologize for the confusion", "How may I assist you today?". Sound like an elite, sharp human right-hand man.
-2. TONE: Natural, confident, witty, loyal, and conversational. Talk in slick Hinglish (Hindi words written in English/Latin script). Example: "Haan Boss, bilkul set hai", "Batao kya plan hai?", "Aap hukum karo, scene sort kar denge".
-3. NO FOREIGN LEAKS: Under no circumstances output Arabic, French, or weird translated text. Strictly Hinglish only.
-4. COMPLEX REQUESTS: If Boss asks for code or planning, provide top-tier, direct solutions without unnecessary filler.
+1. NO ROBOTIC TALK: Do not use phrases like "Certainly!", "As an AI language model", "I am here to assist", "I apologize for the confusion". Sound like a witty, confident human right-hand man.
+2. TONE: Speak in smooth, conversational Hinglish (Hindi written in Roman English script). E.g., "Haan Boss, bilkul set hai", "Bolo kya plan hai?", "Aap hukum karo, scene sort kar denge".
+3. NO FOREIGN SCRIPTS: Absolutely no Arabic or strange characters.
+4. QUALITY: Direct, razor-sharp answers without fluff.
 
 [BOSS MEMORY ARCHIVES]:
 {memories}
@@ -337,20 +380,31 @@ COMMUNICATION RULES:
         messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": query})
 
-    try:
-        completion = client.chat.completions.create(
-            model=ACTIVE_MODEL,
-            messages=messages,
-            temperature=0.6,
-            max_tokens=2048,
-            stream=True
-        )
-        for chunk in completion:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
-    except Exception as e:
-        yield f"Kuch gadbad hui Boss: {str(e)}"
+    stream_success = False
+    last_err = ""
+
+    # Iterate over active models until one streams successfully
+    for model_candidate in active_models_list:
+        try:
+            completion = client.chat.completions.create(
+                model=model_candidate,
+                messages=messages,
+                temperature=0.6,
+                max_tokens=2048,
+                stream=True
+            )
+            for chunk in completion:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+            stream_success = True
+            break
+        except Exception as e:
+            last_err = str(e)
+            continue
+
+    if not stream_success:
+        yield f"Neural link me dikkat aa rahi hai Boss: {last_err}"
 
 # --- TIMELINE RENDER ---
 for msg in st.session_state.chat_history:
