@@ -3,13 +3,11 @@ import os
 import time
 import subprocess
 from PIL import Image
-from google import genai
-from google.genai import types
-from google.genai.errors import APIError
+from groq import Groq
 
 # --- SIVUN KONFIGURAATIO / MATRIX CONFIG ---
 st.set_page_config(
-    page_title="ARIS  Matrix Supreme",
+    page_title="ARIS Matrix Supreme",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -116,18 +114,44 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- GEMINI CLIENT (STRICTLY FROM SECRETS / ENV - NO HARDCODED KEY) ---
+# --- GROQ CLIENT SETUP ---
 @st.cache_resource
-def get_gemini_client():
+def get_groq_client():
     api_key = None
-    if "GEMINI_API_KEY" in st.secrets:
-        api_key = st.secrets["GEMINI_API_KEY"]
-    elif "GEMINI_API_KEY" in os.environ:
-        api_key = os.environ["GEMINI_API_KEY"]
+    if "GROQ_API_KEY" in st.secrets:
+        api_key = st.secrets["GROQ_API_KEY"]
+    elif "GROQ_API_KEY" in os.environ:
+        api_key = os.environ["GROQ_API_KEY"]
 
     if not api_key:
         return None
-    return genai.Client(api_key=api_key)
+    return Groq(api_key=api_key)
+
+# --- DYNAMIC WORKING MODEL RESOLVER ---
+@st.cache_data(ttl=1800)
+def resolve_active_groq_model():
+    client = get_groq_client()
+    if not client:
+        return "llama-3.3-70b-versatile"
+    
+    preferred_models = [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768"
+    ]
+    try:
+        live_catalog = client.models.list()
+        active_ids = [m.id for m in live_catalog.data if getattr(m, 'active', True)]
+        for pref in preferred_models:
+            if pref in active_ids:
+                return pref
+        # Fallback to any valid text generation model
+        for m_id in active_ids:
+            if "whisper" not in m_id.lower() and "guard" not in m_id.lower():
+                return m_id
+    except Exception:
+        pass
+    return "llama-3.3-70b-versatile"
 
 # --- SESSION STATES ---
 if "threads" not in st.session_state:
@@ -175,35 +199,36 @@ def omega_desktop_agent(query):
         return f"OMEGA Execution Error: {str(e)}"
     return None
 
-# --- SAFE RETRY STREAMING CORE (PREVENTS 429 CRASHES) ---
-def stream_gemini_safe(client, model, contents, config, max_retries=3):
+# --- SAFE RETRY STREAMING CORE FOR GROQ OPENAI-COMPATIBLE ENGINE ---
+def stream_groq_safe(client, model, messages, max_retries=3):
     for attempt in range(max_retries):
         try:
-            stream = client.models.generate_content_stream(
+            stream = client.chat.completions.create(
                 model=model,
-                contents=contents,
-                config=config
+                messages=messages,
+                temperature=0.4,
+                max_tokens=3000,
+                stream=True
             )
             for chunk in stream:
-                if chunk.text:
-                    yield chunk.text
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
             return
-        except APIError as e:
-            if "429" in str(e) and attempt < max_retries - 1:
+        except Exception as e:
+            err_msg = str(e)
+            if ("429" in err_msg or "rate_limit" in err_msg.lower()) and attempt < max_retries - 1:
                 wait_time = 2 ** (attempt + 1)
                 time.sleep(wait_time)
             else:
-                yield f"\n\n[API ALERT]: Rate limit hit or service error: {str(e)}"
+                yield f"\n\n[CORE ERROR]: Execution fault on model {model}: {err_msg}"
                 return
-        except Exception as e:
-            yield f"\n\n[CORE ERROR]: {str(e)}"
-            return
 
 # --- MASTER CONTROLLER (ARIS / JARVIS) ---
 def run_jarvis_core_stream(query, uploaded_file=None):
-    client = get_gemini_client()
+    client = get_groq_client()
     if not client:
-        yield "SYSTEM ERROR: GEMINI_API_KEY nahi mili! Streamlit Cloud ke Settings -> Secrets me GEMINI_API_KEY daalein."
+        yield "SYSTEM ERROR: GROQ_API_KEY nahi mili! Streamlit Cloud ke Settings -> Secrets me GROQ_API_KEY daalein."
         return
 
     q_lower = query.lower() if query else ""
@@ -256,27 +281,22 @@ Tone & Style: Confident, fast, razor-sharp intelligence, sophisticated, polite, 
 {memory_context}
 """
 
-    content_parts = []
+    messages = [{"role": "system", "content": system_prompt}]
+
+    # Conversation history context
+    thread_history = st.session_state.threads[st.session_state.current_thread]
+    for msg in thread_history[-6:]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+
+    # User Query injection
+    final_query = query
     if uploaded_file is not None:
-        bytes_data = uploaded_file.getvalue()
-        mime_type = uploaded_file.type or "image/jpeg"
-        content_parts.append(types.Part.from_bytes(data=bytes_data, mime_type=mime_type))
+        final_query = f"[Multimodal Optical File Attached: {uploaded_file.name}] {query}"
 
-    content_parts.append(query)
+    messages.append({"role": "user", "content": final_query})
 
-    config = types.GenerateContentConfig(
-        system_instruction=system_prompt,
-        temperature=0.4,
-        max_output_tokens=3000
-    )
-
-    for chunk in stream_gemini_safe(
-        client=client,
-        model="gemini-2.5-flash",
-        contents=content_parts,
-        config=config,
-        max_retries=3
-    ):
+    active_model = resolve_active_groq_model()
+    for chunk in stream_groq_safe(client=client, model=active_model, messages=messages, max_retries=3):
         yield chunk
 
 # --- SIDEBAR CONTROL DECK ---
@@ -316,11 +336,14 @@ with st.sidebar:
                     st.session_state.memory_vault.pop(idx)
                     st.rerun()
 
+# Dynamic Model Resolver Call
+current_active_model = resolve_active_groq_model()
+
 # --- MAIN INTERFACE HUD ---
 st.markdown(f"""
 <div class="jarvis-header">
     <h1 class="jarvis-title">ARIS // JARVIS CORE</h1>
-    <div class="jarvis-sub">TACTICAL AI MATRIX | GEMINI 2.5 FLASH | STREAM: {st.session_state.current_thread}</div>
+    <div class="jarvis-sub">TACTICAL AI MATRIX | INFERENCE: {current_active_model.upper()} | STREAM: {st.session_state.current_thread}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -329,7 +352,7 @@ c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.markdown('<div class="hud-card">STATUS<div class="hud-val">ONLINE 100%</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown('<div class="hud-card">NEURAL CORE<div class="hud-val">GEMINI 2.5</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="hud-card">NEURAL CORE<div class="hud-val">{current_active_model.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
 with c3:
     st.markdown(f'<div class="hud-card">MEMORY VAULT<div class="hud-val">{len(st.session_state.memory_vault)} ENTRIES</div></div>', unsafe_allow_html=True)
 with c4:
