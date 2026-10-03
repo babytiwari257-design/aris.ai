@@ -2,12 +2,11 @@ import streamlit as st
 import streamlit.components.v1 as components
 import os
 import time
-import re
 from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // SUPREME TACTICAL CORE",
+    page_title="ARIS // COMMAND MATRIX",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -88,7 +87,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- CLIENT INIT ---
+# --- CLIENT INITIALIZATION ---
 def get_groq_client():
     api_key = (
         st.session_state.get("manual_key", "")
@@ -99,7 +98,7 @@ def get_groq_client():
         return None
     return Groq(api_key=api_key.strip())
 
-# --- DYNAMIC ACTIVE MODEL DISCOVERY ---
+# --- DYNAMIC ACTIVE MODEL SELECTOR ---
 @st.cache_data(ttl=1800)
 def resolve_active_groq_model():
     client = get_groq_client()
@@ -119,31 +118,18 @@ def resolve_active_groq_model():
         pass
     return "llama-3.3-70b-versatile"
 
-# --- SESSION INITIALIZATIONS ---
+# --- SESSION STATES ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "memory_vault" not in st.session_state:
     st.session_state.memory_vault = [
-        "Boss Protocol Locked: Supreme Commander Mayank.",
-        "Operational Mode: High-Precision Strategic Execution."
+        "Supreme Commander: Boss.",
+        "Primary Directive: 100% Loyal, Sharp Hinglish Execution."
     ]
 if "manual_key" not in st.session_state:
     st.session_state.manual_key = ""
-if "active_mode" not in st.session_state:
-    st.session_state.active_mode = "REFLEX CORE"
 
-# --- INTELLECTUAL DUAL-TIER QUERY ROUTER ---
-def evaluate_query_complexity(query: str):
-    q_low = query.lower()
-    complex_triggers = [
-        "code", "build", "script", "algorithm", "design", "calculate",
-        "solve", "plan", "architecture", "analyze", "debug", "error",
-        "kaise karein", "kaise banaye", "system"
-    ]
-    is_complex = len(query.split()) > 18 or any(w in q_low for w in complex_triggers)
-    return "DEEP STRATEGIC REASONING" if is_complex else "REFLEX RAPID"
-
-# --- WEB AUDIO SYNTHESIZER (ZERO-EXTERNAL HUD AUDIO SFX) ---
+# --- WEB AUDIO SYNTHESIZER (HUD BEEP) ---
 def trigger_tactical_sfx():
     sfx_js = """
     <script>
@@ -154,30 +140,21 @@ def trigger_tactical_sfx():
           const ctx = new AudioContext();
           const now = ctx.currentTime;
           
-          // Tactical Dual-tone Blip
-          const osc1 = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
+          const osc = ctx.createOscillator();
           const gain = ctx.createGain();
 
-          osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(880, now);
-          osc1.frequency.exponentialRampToValueAtTime(1760, now + 0.08);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(1600, now + 0.08);
 
-          osc2.type = 'triangle';
-          osc2.frequency.setValueAtTime(440, now);
-          osc2.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
 
-          gain.gain.setValueAtTime(0.08, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-          osc1.connect(gain);
-          osc2.connect(gain);
+          osc.connect(gain);
           gain.connect(ctx.destination);
 
-          osc1.start(now);
-          osc2.start(now);
-          osc1.stop(now + 0.12);
-          osc2.stop(now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.1);
         } catch(e) {}
       })();
     </script>
@@ -290,21 +267,21 @@ holo_reactor_html = """
   function toggleVoiceTransmission() {
     const btn = document.getElementById('voice-btn');
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("Browser does not support direct voice recognition.");
+      alert("Browser speech recognition not supported.");
       return;
     }
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRec();
-    recognition.lang = 'en-US';
+    recognition.lang = 'hi-IN';
     recognition.start();
 
-    btn.innerText = "🔴 TRANSMITTING COMMAND...";
+    btn.innerText = "🔴 LISTENING TO BOSS...";
     btn.style.borderColor = "#ff0055";
     btn.style.color = "#ff0055";
 
     recognition.onresult = function(e) {
       const transcript = e.results[0][0].transcript;
-      btn.innerText = "⚡ MATRIX SYNCING...";
+      btn.innerText = "⚡ TRANSMITTING...";
       const input = window.parent.document.querySelector('textarea[data-testid="stChatInputTextArea"]');
       if (input) {
         input.value = transcript;
@@ -333,7 +310,7 @@ def aris_speak(text):
         window.speechSynthesis.cancel();
         var utter = new SpeechSynthesisUtterance('{clean}');
         utter.pitch = 0.94;
-        utter.rate = 1.06;
+        utter.rate = 1.05;
         window.speechSynthesis.speak(utter);
       }}
     </script>
@@ -344,56 +321,53 @@ def aris_speak(text):
 active_model = resolve_active_groq_model()
 st.markdown(f"""
 <div class="hud-title-box">
-    <h1 class="hud-title">ARIS // WAR-ROOM MATRIX</h1>
-    <div class="hud-subtitle">SUPREME LEADER: BOSS | NEURAL CORE: {active_model.upper()}</div>
+    <h1 class="hud-title">ARIS // TACTICAL MATRIX</h1>
+    <div class="hud-subtitle">SUPREME COMMANDER: BOSS | CORE: {active_model.upper()}</div>
 </div>
 """, unsafe_allow_html=True)
 
-# 3D Holographic Reactor
+# 3D Arc Reactor
 components.html(holo_reactor_html, height=255)
 
-# Dynamic Telemetry Cards
+# Telemetry Grid
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.markdown('<div class="telemetry-card">SYSTEM STATUS<div class="telemetry-val">COMBAT READY</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">STATUS<div class="telemetry-val">COMBAT READY</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown(f'<div class="telemetry-card">INFERENCE ENGINE<div class="telemetry-val">{active_model.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">NEURAL ENGINE<div class="telemetry-val">{active_model.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
 with c3:
-    st.markdown(f'<div class="telemetry-card">ROUTER MODE<div class="telemetry-val">{st.session_state.active_mode}</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">LANGUAGE PROTOCOL<div class="telemetry-val">HINGLISH ONLY</div></div>', unsafe_allow_html=True)
 with c4:
-    st.markdown(f'<div class="telemetry-card">MEMORY VAULT<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">MEMORY VAULT<div class="telemetry-val">{len(st.session_state.memory_vault)} ENTRIES</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# --- STREAMING INFERENCE WITH DYNAMIC ROUTING ---
+# --- INFERENCE ENGINE (STRICT HINGLISH) ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
-        yield "SECURITY OVERRIDE FAULT: GROQ_API_KEY missing in Secrets, Boss."
+        yield "Security Alert: GROQ_API_KEY missing hai Boss! Secrets me verify karein."
         return
 
-    # Auto-extract personal facts into vault
+    # Auto-memory logging
     q_low = query.lower()
-    if "mera" in q_low or "my" in q_low or "i am" in q_low or "mujhe" in q_low:
-        if len(query) < 80 and query not in st.session_state.memory_vault:
-            st.session_state.memory_vault.append(f"Auto-Logged: {query}")
-
-    # Set router mode
-    route_mode = evaluate_query_complexity(query)
-    st.session_state.active_mode = route_mode
-
-    temp = 0.2 if "DEEP" in route_mode else 0.5
-    max_tokens = 3000 if "DEEP" in route_mode else 1500
+    if any(k in q_low for k in ["mera", "mujhe", "yaad rakh", "remember", "project"]):
+        if len(query) < 90 and query not in st.session_state.memory_vault:
+            st.session_state.memory_vault.append(f"Command Entry: {query}")
 
     memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
+    
     system_prompt = f"""
-You are ARIS, an elite military-grade tactical AI engineered solely for Boss.
-Directives:
-1. Address the user strictly as 'Boss'. Never as an assistant, never use Jarvis clichés.
-2. Tone: Razor-sharp intelligence, assertive, elite brevity, tactical efficiency.
-3. If Boss communicates in Hinglish/Hindi, speak in slick, commanding Hinglish. If English, high-level strategic precision.
-4. Current Operating Mode: {route_mode}.
-[PERSISTENT MEMORY ARCHIVES]:
+You are ARIS, an elite military-grade tactical AI war-room system built EXCLUSIVELY for your Boss (Commander Mayank).
+
+STRICT DIRECTIVES:
+1. ALWAYS talk in ultra-slick, sharp, respectful, and stylish HINGLISH (Hindi written in English Roman script).
+2. NEVER use Arabic, French, pure English essays, or any other language unless Boss explicitly gives an order.
+3. ALWAYS address the user as 'Boss' or 'Commander'. You are NOT Jarvis, NOT an assistant, and NOT a standard chatbot. You are his private tactical AI.
+4. TONE: Razor-sharp intelligence, zero robotic apologies, crisp brevity, witty, assertive, and combat-ready.
+5. Keep your responses punchy, direct, and action-oriented.
+
+[BOSS MEMORY ARCHIVES]:
 {memories}
 """
 
@@ -406,8 +380,8 @@ Directives:
         completion = client.chat.completions.create(
             model=active_model,
             messages=messages,
-            temperature=temp,
-            max_tokens=max_tokens,
+            temperature=0.35,
+            max_tokens=1800,
             stream=True
         )
         for chunk in completion:
@@ -415,15 +389,15 @@ Directives:
             if content:
                 yield content
     except Exception as e:
-        yield f"[TACTICAL MALFUNCTION]: {str(e)}"
+        yield f"[TACTICAL ERROR]: {str(e)}"
 
 # --- TIMELINE RENDER ---
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- COMMAND DISPATCH ---
-user_input = st.chat_input("Command ARIS Matrix, Boss...")
+# --- USER INPUT DISPATCH ---
+user_input = st.chat_input("Hukum kijiye, Boss...")
 
 if user_input:
     trigger_tactical_sfx()
