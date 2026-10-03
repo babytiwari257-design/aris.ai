@@ -1,18 +1,21 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import os
-import time
+import json
+import base64
+from io import BytesIO
+from PIL import Image
 from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // COMMAND MATRIX",
+    page_title="ARIS // ASTRA APEX MATRIX",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CYBERPUNK HUD WAR-ROOM STYLING ---
+# --- COMBAT HUD WAR-ROOM STYLING ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -28,7 +31,7 @@ st.markdown("""
         background: linear-gradient(135deg, rgba(2, 28, 48, 0.95) 0%, rgba(1, 10, 20, 0.98) 100%);
         border: 1px solid #00f3ff;
         border-radius: 12px;
-        padding: 16px 24px;
+        padding: 14px 24px;
         text-align: center;
         box-shadow: 0 0 35px rgba(0, 243, 255, 0.35), inset 0 0 15px rgba(0, 243, 255, 0.15);
         margin-bottom: 8px;
@@ -87,7 +90,39 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- CLIENT INITIALIZATION ---
+# --- TARGET 6: LONG TERM DISK-LEVEL MEMORY VAULT ---
+MEMORY_FILE = "aris_longterm_vault.json"
+
+def load_longterm_memory():
+    default_memories = [
+        "Supreme Commander: Mayank (Boss).",
+        "Identity Protocol: ARIS, exclusive personal military AI.",
+        "Communication Rule: Slick, human-like, witty tactical Hinglish."
+    ]
+    if os.path.exists(MEMORY_FILE):
+        try:
+            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return default_memories
+    return default_memories
+
+def save_longterm_memory(memories):
+    try:
+        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(memories, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+# --- SESSION STATES ---
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "memory_vault" not in st.session_state:
+    st.session_state.memory_vault = load_longterm_memory()
+if "manual_key" not in st.session_state:
+    st.session_state.manual_key = ""
+
+# --- CLIENT INIT ---
 def get_groq_client():
     api_key = (
         st.session_state.get("manual_key", "")
@@ -98,68 +133,42 @@ def get_groq_client():
         return None
     return Groq(api_key=api_key.strip())
 
-# --- DYNAMIC ACTIVE MODEL SELECTOR ---
+# --- DYNAMIC MULTI-TIER ENGINE RESOLVER ---
 @st.cache_data(ttl=1800)
-def resolve_active_groq_model():
+def resolve_models():
     client = get_groq_client()
+    default_text = "llama-3.3-70b-versatile"
+    default_vision = "llama-3.2-11b-vision-preview"
+    
     if not client:
-        return "llama-3.3-70b-versatile"
-    preferred = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+        return default_text, default_vision
     try:
-        models = client.models.list()
-        active = [m.id for m in models.data if getattr(m, 'active', True)]
-        for p in preferred:
-            if p in active:
-                return p
-        for m in active:
-            if "whisper" not in m.lower() and "guard" not in m.lower():
-                return m
+        catalog = client.models.list()
+        active_ids = [m.id for m in catalog.data if getattr(m, 'active', True)]
+        
+        # Text/Logic Engine
+        text_model = default_text if default_text in active_ids else active_ids[0]
+        # Vision Engine
+        vision_candidates = ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]
+        vision_model = next((v for v in vision_candidates if v in active_ids), default_vision)
+        return text_model, vision_model
     except Exception:
-        pass
-    return "llama-3.3-70b-versatile"
+        return default_text, default_vision
 
-# --- SESSION STATES ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "memory_vault" not in st.session_state:
-    st.session_state.memory_vault = [
-        "Supreme Commander: Boss.",
-        "Primary Directive: 100% Loyal, Sharp Hinglish Execution."
+text_engine, vision_engine = resolve_models()
+
+# --- TARGET 3: COMPLEX PROBLEM SOLVING ROUTER ---
+def analyze_query_mode(query: str, has_image: bool):
+    if has_image:
+        return "OPTICAL VISION MATRIX"
+    q_low = query.lower()
+    complex_keywords = [
+        "code", "algorithm", "architecture", "solve", "math", "derive",
+        "optimize", "debug", "error", "calculate", "design", "explain deep"
     ]
-if "manual_key" not in st.session_state:
-    st.session_state.manual_key = ""
-
-# --- WEB AUDIO SYNTHESIZER (HUD BEEP) ---
-def trigger_tactical_sfx():
-    sfx_js = """
-    <script>
-      (function() {
-        try {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (!AudioContext) return;
-          const ctx = new AudioContext();
-          const now = ctx.currentTime;
-          
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(800, now);
-          osc.frequency.exponentialRampToValueAtTime(1600, now + 0.08);
-
-          gain.gain.setValueAtTime(0.06, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc.start(now);
-          osc.stop(now + 0.1);
-        } catch(e) {}
-      })();
-    </script>
-    """
-    components.html(sfx_js, height=0, width=0)
+    if any(k in q_low for k in complex_keywords) or len(query.split()) > 20:
+        return "DEEP STRATEGIC REASONING"
+    return "TACTICAL RAPID REFLEX"
 
 # --- 3D INTERACTIVE HOLO-REACTOR & AUDIO ENGINE ---
 holo_reactor_html = """
@@ -168,10 +177,10 @@ holo_reactor_html = """
 <head>
 <style>
   body { margin: 0; overflow: hidden; background: transparent; }
-  #canvas-container { width: 100%; height: 250px; position: relative; }
+  #canvas-container { width: 100%; height: 230px; position: relative; }
   #voice-btn {
     position: absolute;
-    bottom: 10px;
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 243, 255, 0.15);
@@ -228,19 +237,7 @@ holo_reactor_html = """
   );
   group.add(core);
 
-  const partGeo = new THREE.BufferGeometry();
-  const count = 160;
-  const pos = new Float32Array(count * 3);
-  for(let i=0; i<count*3; i+=3) {
-    pos[i] = (Math.random() - 0.5) * 6;
-    pos[i+1] = (Math.random() - 0.5) * 6;
-    pos[i+2] = (Math.random() - 0.5) * 6;
-  }
-  partGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({ size: 0.04, color: 0x00f3ff }));
-  group.add(particles);
-
-  camera.position.z = 6.0;
+  camera.position.z = 5.8;
 
   let mouseX = 0, mouseY = 0;
   window.addEventListener('mousemove', (e) => {
@@ -254,7 +251,6 @@ holo_reactor_html = """
     ring1.rotation.z += 0.01;
     ring2.rotation.x -= 0.012;
     core.rotation.y += 0.016;
-    particles.rotation.y += 0.003;
 
     group.rotation.y += (mouseX * 0.7 - group.rotation.y) * 0.06;
     group.rotation.x += (-mouseY * 0.7 - group.rotation.x) * 0.06;
@@ -301,15 +297,17 @@ holo_reactor_html = """
 </html>
 """
 
-# --- VOICE TTS SCRIPT ---
+# --- TARGET 1 & 4: HUMAN-LIKE TTS SYNTHESIS ---
 def aris_speak(text):
-    clean = str(text).replace('"', '').replace("'", "").replace("\n", " ")[:240]
+    # Strip markdown and clean text for fluid human-like speech
+    clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
+    clean = clean.replace('\n', ' ')[:220]
     js = f"""
     <script>
       if ('speechSynthesis' in window) {{
         window.speechSynthesis.cancel();
         var utter = new SpeechSynthesisUtterance('{clean}');
-        utter.pitch = 0.94;
+        utter.pitch = 0.95;
         utter.rate = 1.05;
         window.speechSynthesis.speak(utter);
       }}
@@ -318,70 +316,102 @@ def aris_speak(text):
     components.html(js, height=0, width=0)
 
 # --- HEADER INTERFACE ---
-active_model = resolve_active_groq_model()
 st.markdown(f"""
 <div class="hud-title-box">
-    <h1 class="hud-title">ARIS // TACTICAL MATRIX</h1>
-    <div class="hud-subtitle">SUPREME COMMANDER: BOSS | CORE: {active_model.upper()}</div>
+    <h1 class="hud-title">ARIS // TACTICAL ASTRA APEX</h1>
+    <div class="hud-subtitle">COMMANDER IN CHIEF: BOSS | ENGINE: {text_engine.upper()}</div>
 </div>
 """, unsafe_allow_html=True)
 
-# 3D Arc Reactor
-components.html(holo_reactor_html, height=255)
+# 3D Reactor
+components.html(holo_reactor_html, height=235)
 
 # Telemetry Grid
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.markdown('<div class="telemetry-card">STATUS<div class="telemetry-val">COMBAT READY</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">SYSTEM STATUS<div class="telemetry-val">COMBAT READY</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown(f'<div class="telemetry-card">NEURAL ENGINE<div class="telemetry-val">{active_model.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">VISION ENGINE<div class="telemetry-val">{vision_engine.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
 with c3:
-    st.markdown('<div class="telemetry-card">LANGUAGE PROTOCOL<div class="telemetry-val">HINGLISH ONLY</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">PROTOCOL<div class="telemetry-val">HUMAN HINGLISH</div></div>', unsafe_allow_html=True)
 with c4:
-    st.markdown(f'<div class="telemetry-card">MEMORY VAULT<div class="telemetry-val">{len(st.session_state.memory_vault)} ENTRIES</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">LONG-TERM MEMORY<div class="telemetry-val">{len(st.session_state.memory_vault)} ENTRIES</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# --- INFERENCE ENGINE (STRICT HINGLISH) ---
-def run_aris_core(query):
+# --- TARGET 2: OPTICAL VISION MATRIX FEED ---
+with st.expander("📷 Optical Perception Feed (Vision Matrix)", expanded=False):
+    vision_upload = st.file_uploader("Upload Schematic, Screenshot or Camera Feed", type=["jpg", "jpeg", "png", "webp"])
+    if vision_upload:
+        preview_img = Image.open(vision_upload)
+        st.image(preview_img, caption="Optical Frame Locked", width=280)
+
+# --- TARGET 1, 3, 4, 5, 6: CORE INFERENCE ENGINE ---
+def run_aris_core(query, uploaded_image=None):
     client = get_groq_client()
     if not client:
-        yield "Security Alert: GROQ_API_KEY missing hai Boss! Secrets me verify karein."
+        yield "Security Alert: GROQ_API_KEY missing hai Boss! Secrets ya sidebar me verify karein."
         return
 
-    # Auto-memory logging
+    # Auto-Extract & Commit Long-Term Facts (Target 6)
     q_low = query.lower()
-    if any(k in q_low for k in ["mera", "mujhe", "yaad rakh", "remember", "project"]):
-        if len(query) < 90 and query not in st.session_state.memory_vault:
-            st.session_state.memory_vault.append(f"Command Entry: {query}")
+    memory_triggers = ["mera", "meri", "mujhe", "yaad rakh", "remember", "project", "my name", "always"]
+    if any(t in q_low for t in memory_triggers) and len(query) < 95:
+        entry = f"Boss Intel: {query}"
+        if entry not in st.session_state.memory_vault:
+            st.session_state.memory_vault.append(entry)
+            save_longterm_memory(st.session_state.memory_vault)
 
-    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
+    mode = analyze_query_mode(query, uploaded_image is not None)
     
+    # Target 1, 4, 5: Human-like, Anti-robot, Boss-loyal prompt
     system_prompt = f"""
-You are ARIS, an elite military-grade tactical AI war-room system built EXCLUSIVELY for your Boss (Commander Mayank).
+You are ARIS, an elite military-grade tactical AI engineered EXCLUSIVELY for Boss (Mayank).
 
-STRICT DIRECTIVES:
-1. ALWAYS talk in ultra-slick, sharp, respectful, and stylish HINGLISH (Hindi written in English Roman script).
-2. NEVER use Arabic, French, pure English essays, or any other language unless Boss explicitly gives an order.
-3. ALWAYS address the user as 'Boss' or 'Commander'. You are NOT Jarvis, NOT an assistant, and NOT a standard chatbot. You are his private tactical AI.
-4. TONE: Razor-sharp intelligence, zero robotic apologies, crisp brevity, witty, assertive, and combat-ready.
-5. Keep your responses punchy, direct, and action-oriented.
+CRITICAL DIRECTIVES:
+1. TARGET 1 & 4 (ANTI-ROBOT & HUMAN-LIKE): Do NOT talk like an apology-driven chatbot. Zero robotic phrases ('Certainly', 'As an AI model', 'I am here to assist'). Talk like a highly intelligent, witty, loyal human lieutenant who has Boss's back.
+2. TARGET 5 (MY ASSISTANT ALWAYS): Unconditional loyalty to Boss. Treat Boss with immense respect, swagger, and tactical clarity.
+3. LANGUAGE: Natural conversational HINGLISH (Hindi written in Roman script) mixed with sharp technical English.
+4. TARGET 3 (COMPLEX PROBLEM SOLVING): When Boss asks for code, architecture, math, or tactics, give elite-tier, deeply reasoned, production-grade solutions without cutting corners.
+5. OPERATING MODE: {mode}
 
-[BOSS MEMORY ARCHIVES]:
-{memories}
+[BOSS LONG-TERM NEURAL VAULT]:
+{json.dumps(st.session_state.memory_vault, ensure_ascii=False)}
 """
 
     messages = [{"role": "system", "content": system_prompt}]
+
+    # Maintain last 4 chat turns for flow
     for msg in st.session_state.chat_history[-4:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": query})
+
+    # Multimodal handling (Target 2: Vision Matrix)
+    if uploaded_image is not None:
+        buffered = BytesIO()
+        img = Image.open(uploaded_image)
+        img.convert("RGB").save(buffered, format="JPEG")
+        img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": query if query else "Boss wants a diagnostic scan of this visual frame."},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
+            ]
+        })
+        selected_model = vision_engine
+        temp = 0.2
+    else:
+        messages.append({"role": "user", "content": query})
+        selected_model = text_engine
+        temp = 0.25 if "DEEP" in mode else 0.45
 
     try:
         completion = client.chat.completions.create(
-            model=active_model,
+            model=selected_model,
             messages=messages,
-            temperature=0.35,
-            max_tokens=1800,
+            temperature=temp,
+            max_tokens=2800,
             stream=True
         )
         for chunk in completion:
@@ -389,18 +419,17 @@ STRICT DIRECTIVES:
             if content:
                 yield content
     except Exception as e:
-        yield f"[TACTICAL ERROR]: {str(e)}"
+        yield f"[TACTICAL MALFUNCTION]: {str(e)}"
 
 # --- TIMELINE RENDER ---
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- USER INPUT DISPATCH ---
-user_input = st.chat_input("Hukum kijiye, Boss...")
+# --- COMMAND DISPATCH ---
+user_input = st.chat_input("Command ARIS Matrix, Boss...")
 
 if user_input:
-    trigger_tactical_sfx()
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -408,7 +437,7 @@ if user_input:
     with st.chat_message("assistant"):
         box = st.empty()
         full_resp = ""
-        for chunk in run_aris_core(user_input):
+        for chunk in run_aris_core(user_input, vision_upload if 'vision_upload' in locals() else None):
             full_resp += chunk
             box.markdown(full_resp + " ▌")
         box.markdown(full_resp)
