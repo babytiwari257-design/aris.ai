@@ -329,24 +329,155 @@ holo_reactor_html = """
 </html>
 """
 
-# --- NATURAL HUMAN TTS VOICE PICKER ---
+# --- NATURAL HUMAN TTS VOICE PICKER (SYNTAX-SAFE) ---
 def aris_speak(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
-    js = f"""
+    
+    js_template = """
     <script>
-      function speakVoice() {{
+      function speakVoice() {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
-        var utter = new SpeechSynthesisUtterance('{clean}');
+        var utter = new SpeechSynthesisUtterance('__TEXT__');
         var voices = window.speechSynthesis.getVoices();
         
-        var selected = voices.find(v => 
-          (v.name.includes("Natural") && (v.lang.includes("IN") || v.lang.includes("hi"))) ||
-          v.name.includes("Neerja") ||
-          v.name.includes("Prabhat") ||
-          v.name.includes("Google हिन्दी") ||
-          v.lang === "en-IN"
-        );
-        if (!selected) {{
-          selected = voices.find(v => v.lang === "en-US" || v.name.includes("Natural"));
+        var selected = voices.find(function(v) {
+          return (v.name.includes("Natural") && (v.lang.includes("IN") || v.lang.includes("hi"))) ||
+                 v.name.includes("Neerja") ||
+                 v.name.includes("Prabhat") ||
+                 v.name.includes("Google हिन्दी") ||
+                 v.lang === "hi-IN";
+        });
+        
+        if (!selected) {
+          selected = voices.find(function(v) {
+            return v.lang === "en-IN" || v.lang === "en-US" || v.name.includes("Natural");
+          });
+        }
+        
+        if (selected) utter.voice = selected;
+        utter.pitch = 1.0;
+        utter.rate = 1.04;
+        window.speechSynthesis.speak(utter);
+      }
+
+      if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = speakVoice;
+      } else {
+        speakVoice();
+      }
+    </script>
+    """
+    
+    js = js_template.replace('__TEXT__', clean)
+    components.html(js, height=0, width=0)
+
+# --- HEADER INTERFACE ---
+st.markdown(f"""
+<div class="hud-title-box">
+    <h1 class="hud-title">ARIS // TACTICAL MATRIX</h1>
+    <div class="hud-subtitle">COMMANDER: MAYANK (BOSS) | CORE: {primary_model_name.upper()}</div>
+</div>
+""", unsafe_allow_html=True)
+
+# 3D Reactor
+components.html(holo_reactor_html, height=215)
+
+# Telemetry Cards
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown('<div class="telemetry-card">STATUS<div class="telemetry-val">OPERATIONAL</div></div>', unsafe_allow_html=True)
+with c2:
+    st.markdown(f'<div class="telemetry-card">CORE ENGINE<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
+with c3:
+    st.markdown('<div class="telemetry-card">MODE<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
+with c4:
+    st.markdown(f'<div class="telemetry-card">MEMORY<div class="telemetry-val">{len(st.session_state.memory_vault)} STORED</div></div>', unsafe_allow_html=True)
+
+st.write("")
+
+# --- INFERENCE ENGINE WITH ADAPTIVE LANGUAGE LOGIC ---
+def run_aris_core(query):
+    client = get_groq_client()
+    if not client:
+        yield "Boss, GROQ_API_KEY is not found in Secrets. Please verify your configuration."
+        return
+
+    # Memory Logging
+    q_low = query.lower()
+    memory_triggers = ["remember", "my project", "yaad rakh", "mera", "meri"]
+    if any(t in q_low for t in memory_triggers) and len(query) < 95:
+        entry = f"Intel: {query}"
+        if entry not in st.session_state.memory_vault:
+            st.session_state.memory_vault.append(entry)
+            save_longterm_memory(st.session_state.memory_vault)
+
+    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
+
+    system_prompt = f"""
+You are ARIS, the elite tactical AI lieutenant and trusted right-hand partner built exclusively for Boss (Mayank).
+
+LANGUAGE & COMMUNICATION PROTOCOL:
+1. DEFAULT LANGUAGE: Speak in clean, professional, crisp English by default.
+2. ADAPTIVE SWITCHING: If Boss speaks to you in Hindi or Hinglish, adapt naturally into fluent, confident Hinglish mix (Roman script). Do NOT force Hinglish if Boss is speaking in standard English.
+3. ZERO ROBOTIC FLUFF: Never say "Certainly!", "As an AI language model", "How may I assist you?", or give corporate customer care replies. Sound like an intelligent, confident human partner.
+4. LOYALTY & ADDRESS: Mayank is Boss. Treat him with authentic respect, wit, and confidence.
+5. CLARITY: Keep answers sharp, high-value, and direct.
+
+[BOSS ARCHIVED INTEL]:
+{memories}
+"""
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in st.session_state.chat_history[-4:]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": query})
+
+    stream_success = False
+    last_err = ""
+
+    for model_candidate in active_models_list:
+        try:
+            completion = client.chat.completions.create(
+                model=model_candidate,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2048,
+                stream=True
+            )
+            for chunk in completion:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+            stream_success = True
+            break
+        except Exception as e:
+            last_err = str(e)
+            continue
+
+    if not stream_success:
+        yield f"Neural link connection failed: {last_err}"
+
+# --- TIMELINE RENDER ---
+for msg in st.session_state.chat_history:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+# --- USER COMMAND DISPATCH ---
+user_input = st.chat_input("Command ARIS, Boss...")
+
+if user_input:
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    with st.chat_message("assistant"):
+        box = st.empty()
+        full_resp = ""
+        for chunk in run_aris_core(user_input):
+            full_resp += chunk
+            box.markdown(full_resp + " ▌")
+        box.markdown(full_resp)
+        st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
+        aris_speak(full_resp)
