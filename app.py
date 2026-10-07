@@ -12,92 +12,126 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- COMBAT HUD STYLING ---
+# --- HIGH-CONTRAST READABLE COMBAT HUD STYLING ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
+    /* Global Background: Deep Carbon Black for maximum readability */
     .stApp {
-        background: radial-gradient(circle at 50% 15%, #051622 0%, #01060a 100%);
-        color: #d1ecf1;
-        font-family: 'Rajdhani', sans-serif;
+        background-color: #05080f !important;
+        background-image: radial-gradient(circle at 50% 0%, #0d1b2a 0%, #05080f 80%) !important;
+        color: #f1f5f9 !important;
+        font-family: 'Inter', sans-serif !important;
     }
     header, footer { visibility: hidden !important; }
 
+    /* Header Bar */
     .hud-title-box {
-        background: linear-gradient(135deg, rgba(2, 28, 48, 0.95) 0%, rgba(1, 10, 20, 0.98) 100%);
-        border: 1px solid #00f3ff;
+        background: #09131f;
+        border: 1px solid #00e5ff;
         border-radius: 12px;
-        padding: 14px 24px;
+        padding: 16px 24px;
         text-align: center;
-        box-shadow: 0 0 35px rgba(0, 243, 255, 0.35), inset 0 0 15px rgba(0, 243, 255, 0.15);
-        margin-bottom: 8px;
+        box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+        margin-bottom: 12px;
     }
     .hud-title {
         font-family: 'Orbitron', sans-serif;
-        color: #00f3ff;
+        color: #00e5ff;
         font-size: 26px;
         font-weight: 900;
-        letter-spacing: 4px;
-        text-shadow: 0 0 15px rgba(0, 243, 255, 0.8);
+        letter-spacing: 3px;
         margin: 0;
     }
     .hud-subtitle {
-        color: #38bdf8;
-        font-size: 11px;
-        letter-spacing: 3px;
-        margin-top: 4px;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        margin-top: 6px;
         text-transform: uppercase;
     }
 
+    /* Telemetry Cards */
     .telemetry-card {
-        background: rgba(4, 18, 30, 0.85);
-        border: 1px solid rgba(0, 243, 255, 0.3);
+        background: #0d1829;
+        border: 1px solid #1e3a5f;
         border-radius: 8px;
-        padding: 8px;
+        padding: 10px;
         text-align: center;
         font-family: 'Orbitron', sans-serif;
         font-size: 11px;
         color: #38bdf8;
-        box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.15);
     }
     .telemetry-val {
         color: #ffffff;
-        font-size: 13px;
-        font-weight: bold;
-        text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
+        font-size: 14px;
+        font-weight: 700;
+        margin-top: 2px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
+    /* Chat Messages: Pure contrast for effortless reading */
+    [data-testid="stChatMessage"] {
+        padding: 14px 18px !important;
+        border-radius: 10px !important;
+        margin-bottom: 10px !important;
+        line-height: 1.6 !important;
+        font-size: 15px !important;
+    }
+    /* ARIS Message Bubble */
     [data-testid="stChatMessage"]:nth-child(even) {
-        background: rgba(3, 25, 40, 0.85) !important;
-        border: 1px solid #00f3ff !important;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
-    }
-    [data-testid="stChatMessage"]:nth-child(odd) {
-        background: rgba(8, 32, 54, 0.75) !important;
+        background-color: #0b1a2e !important;
         border: 1px solid #0284c7 !important;
-        border-radius: 10px;
+        color: #f8fafc !important;
     }
+    /* User Message Bubble */
+    [data-testid="stChatMessage"]:nth-child(odd) {
+        background-color: #081320 !important;
+        border: 1px solid #1e293b !important;
+        color: #e2e8f0 !important;
+    }
+
+    /* Message inner markdown text force-bright */
+    [data-testid="stChatMessage"] p, 
+    [data-testid="stChatMessage"] li, 
+    [data-testid="stChatMessage"] span {
+        color: #f8fafc !important;
+        font-weight: 400 !important;
+    }
+    [data-testid="stChatMessage"] strong {
+        color: #38bdf8 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Code Blocks within chat */
+    pre, code {
+        background-color: #030712 !important;
+        color: #38bdf8 !important;
+        border: 1px solid #1f2937 !important;
+        border-radius: 6px !important;
+    }
+
+    /* Chat Input Area */
     .stTextInput input, .stChatInput textarea {
-        background-color: #030d17 !important;
-        border: 1px solid #00f3ff !important;
-        color: #00f3ff !important;
+        background-color: #0b1320 !important;
+        border: 1px solid #0284c7 !important;
+        color: #ffffff !important;
+        font-size: 15px !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- MEMORY VAULT ---
+# --- LONG TERM MEMORY VAULT ---
 MEMORY_FILE = "aris_longterm_vault.json"
 
 def load_longterm_memory():
     defaults = [
         "Supreme Commander: Mayank (Boss).",
-        "Identity Protocol: ARIS, exclusive tactical AI partner.",
-        "Communication Rule: Natural, witty, human-like Hinglish."
+        "Identity Protocol: ARIS, tactical AI partner."
     ]
     if os.path.exists(MEMORY_FILE):
         try:
@@ -114,21 +148,15 @@ def save_longterm_memory(memories):
     except Exception:
         pass
 
-# --- SESSION STATES ---
+# --- SESSION INITIALIZATIONS ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "memory_vault" not in st.session_state:
     st.session_state.memory_vault = load_longterm_memory()
-if "manual_key" not in st.session_state:
-    st.session_state.manual_key = ""
 
 # --- GROQ CLIENT RETRIEVER ---
 def get_groq_client():
-    api_key = (
-        st.session_state.get("manual_key", "")
-        or st.secrets.get("GROQ_API_KEY")
-        or os.environ.get("GROQ_API_KEY")
-    )
+    api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
     if not api_key:
         return None
     return Groq(api_key=api_key.strip())
@@ -137,7 +165,6 @@ def get_groq_client():
 @st.cache_data(ttl=900)
 def discover_usable_models():
     client = get_groq_client()
-    # Preferred order of modern Groq models
     priority_order = [
         "openai/gpt-oss-120b",
         "openai/gpt-oss-20b",
@@ -152,7 +179,6 @@ def discover_usable_models():
         live_catalog = client.models.list()
         all_ids = [m.id for m in live_catalog.data if getattr(m, 'active', True)]
 
-        # Filter out audio, whisper, safety guard, or external terms models
         clean_models = [
             m_id for m_id in all_ids
             if not any(blocked in m_id.lower() for blocked in [
@@ -160,7 +186,6 @@ def discover_usable_models():
             ])
         ]
 
-        # Prioritize matching models
         sorted_models = []
         for pref in priority_order:
             if pref in clean_models:
@@ -176,35 +201,36 @@ def discover_usable_models():
 active_models_list = discover_usable_models()
 primary_model_name = active_models_list[0] if active_models_list else "openai/gpt-oss-120b"
 
-# --- 3D INTERACTIVE HOLO-REACTOR & VOICE MIC ---
+# --- 3D INTERACTIVE HOLO-REACTOR & AUDIO ENGINE ---
 holo_reactor_html = """
 <!DOCTYPE html>
 <html>
 <head>
 <style>
   body { margin: 0; overflow: hidden; background: transparent; }
-  #canvas-container { width: 100%; height: 230px; position: relative; }
+  #canvas-container { width: 100%; height: 210px; position: relative; }
   #voice-btn {
     position: absolute;
-    bottom: 8px;
+    bottom: 6px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 243, 255, 0.15);
-    border: 1px solid #00f3ff;
-    color: #00f3ff;
+    background: #0b1a2e;
+    border: 1px solid #00e5ff;
+    color: #00e5ff;
     font-family: 'Orbitron', monospace;
     font-size: 11px;
-    padding: 6px 16px;
+    font-weight: bold;
+    padding: 7px 18px;
     border-radius: 20px;
     cursor: pointer;
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
-    transition: all 0.3s;
-    letter-spacing: 2px;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+    transition: all 0.25s;
+    letter-spacing: 1.5px;
   }
   #voice-btn:hover {
-    background: #00f3ff;
-    color: #01060a;
-    box-shadow: 0 0 25px #00f3ff;
+    background: #00e5ff;
+    color: #05080f;
+    box-shadow: 0 0 25px #00e5ff;
   }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -227,12 +253,12 @@ holo_reactor_html = """
 
   const ring1 = new THREE.Mesh(
     new THREE.TorusGeometry(2.3, 0.03, 16, 90),
-    new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true })
+    new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
   );
   group.add(ring1);
 
   const ring2 = new THREE.Mesh(
-    new THREE.TorusGeometry(1.7, 0.05, 16, 75),
+    new THREE.TorusGeometry(1.7, 0.04, 16, 75),
     new THREE.MeshBasicMaterial({ color: 0x0284c7, wireframe: true })
   );
   group.add(ring2);
@@ -274,7 +300,7 @@ holo_reactor_html = """
     }
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRec();
-    recognition.lang = 'hi-IN';
+    recognition.lang = 'en-IN';
     recognition.start();
 
     btn.innerText = "🔴 LISTENING TO BOSS...";
@@ -294,8 +320,8 @@ holo_reactor_html = """
     };
     recognition.onend = function() {
       btn.innerText = "🎙️ TRANSMIT AUDIO [HOLD TO TALK]";
-      btn.style.borderColor = "#00f3ff";
-      btn.style.color = "#00f3ff";
+      btn.style.borderColor = "#00e5ff";
+      btn.style.color = "#00e5ff";
     };
   }
 </script>
@@ -303,128 +329,24 @@ holo_reactor_html = """
 </html>
 """
 
-# --- VOICE REACTION TTS ---
+# --- NATURAL HUMAN TTS VOICE PICKER ---
 def aris_speak(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
     js = f"""
     <script>
-      if ('speechSynthesis' in window) {{
+      function speakVoice() {{
+        if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         var utter = new SpeechSynthesisUtterance('{clean}');
-        utter.pitch = 0.95;
-        utter.rate = 1.05;
-        window.speechSynthesis.speak(utter);
-      }}
-    </script>
-    """
-    components.html(js, height=0, width=0)
-
-# --- HEADER INTERFACE ---
-st.markdown(f"""
-<div class="hud-title-box">
-    <h1 class="hud-title">ARIS // TACTICAL MATRIX</h1>
-    <div class="hud-subtitle">COMMANDER IN CHIEF: BOSS | ENGINE: {primary_model_name.upper()}</div>
-</div>
-""", unsafe_allow_html=True)
-
-# 3D Reactor
-components.html(holo_reactor_html, height=235)
-
-# Telemetry Cards
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.markdown('<div class="telemetry-card">STATUS<div class="telemetry-val">ONLINE 100%</div></div>', unsafe_allow_html=True)
-with c2:
-    st.markdown(f'<div class="telemetry-card">ENGINE<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
-with c3:
-    st.markdown('<div class="telemetry-card">LANGUAGE<div class="telemetry-val">NATURAL HINGLISH</div></div>', unsafe_allow_html=True)
-with c4:
-    st.markdown(f'<div class="telemetry-card">MEMORY VAULT<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE</div></div>', unsafe_allow_html=True)
-
-st.write("")
-
-# --- INFERENCE ENGINE (FAILSAFE POOL + NATURAL PERSONA) ---
-def run_aris_core(query):
-    client = get_groq_client()
-    if not client:
-        yield "Arre Boss, GROQ_API_KEY Secrets me nahi mili! Ek baar check kar lijiye."
-        return
-
-    # Memory Logging
-    q_low = query.lower()
-    memory_triggers = ["mera", "meri", "mujhe", "yaad rakh", "remember", "project", "my name"]
-    if any(t in q_low for t in memory_triggers) and len(query) < 95:
-        entry = f"Boss Intel: {query}"
-        if entry not in st.session_state.memory_vault:
-            st.session_state.memory_vault.append(entry)
-            save_longterm_memory(st.session_state.memory_vault)
-
-    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
-
-    system_prompt = f"""
-You are ARIS, an ultra-smart, loyal, witty, and human-like AI companion engineered exclusively for Boss (Mayank).
-
-COMMUNICATION RULES:
-1. NO ROBOTIC TALK: Do not use phrases like "Certainly!", "As an AI language model", "I am here to assist", "I apologize for the confusion". Sound like a witty, confident human right-hand man.
-2. TONE: Speak in smooth, conversational Hinglish (Hindi written in Roman English script). E.g., "Haan Boss, bilkul set hai", "Bolo kya plan hai?", "Aap hukum karo, scene sort kar denge".
-3. NO FOREIGN SCRIPTS: Absolutely no Arabic or strange characters.
-4. QUALITY: Direct, razor-sharp answers without fluff.
-
-[BOSS MEMORY ARCHIVES]:
-{memories}
-"""
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for msg in st.session_state.chat_history[-4:]:
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": query})
-
-    stream_success = False
-    last_err = ""
-
-    # Iterate over active models until one streams successfully
-    for model_candidate in active_models_list:
-        try:
-            completion = client.chat.completions.create(
-                model=model_candidate,
-                messages=messages,
-                temperature=0.6,
-                max_tokens=2048,
-                stream=True
-            )
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    yield content
-            stream_success = True
-            break
-        except Exception as e:
-            last_err = str(e)
-            continue
-
-    if not stream_success:
-        yield f"Neural link me dikkat aa rahi hai Boss: {last_err}"
-
-# --- TIMELINE RENDER ---
-for msg in st.session_state.chat_history:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-# --- USER COMMAND DISPATCH ---
-user_input = st.chat_input("Command ARIS Matrix, Boss...")
-
-if user_input:
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant"):
-        box = st.empty()
-        full_resp = ""
-        for chunk in run_aris_core(user_input):
-            full_resp += chunk
-            box.markdown(full_resp + " ▌")
-        box.markdown(full_resp)
-        st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
-        aris_speak(full_resp)
+        var voices = window.speechSynthesis.getVoices();
+        
+        var selected = voices.find(v => 
+          (v.name.includes("Natural") && (v.lang.includes("IN") || v.lang.includes("hi"))) ||
+          v.name.includes("Neerja") ||
+          v.name.includes("Prabhat") ||
+          v.name.includes("Google हिन्दी") ||
+          v.lang === "en-IN"
+        );
+        if (!selected) {{
+          selected = voices.find(v => v.lang === "en-US" || v.name.includes("Natural"));
