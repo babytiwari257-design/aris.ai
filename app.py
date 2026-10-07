@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import os
 import json
+import base64
 from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
@@ -12,12 +13,22 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# --- BASE64 LOGO LOADER ---
+def get_base64_logo():
+    logo_path = "aris_logo.png"
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode()
+            return f"data:image/png;base64,{encoded}"
+    return ""
+
+logo_base64_src = get_base64_logo()
+
 # --- ULTIMATE OLED OBSIDIAN GLASS HUD ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
-    /* Global Viewport: Deep Obsidian with Cyber Ambient Lighting */
     .stApp {
         background: 
             radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.08) 0%, transparent 60%),
@@ -31,7 +42,6 @@ st.markdown("""
     }
     header, footer { visibility: hidden !important; }
 
-    /* Frosted Glass Header Console */
     .hud-title-box {
         background: rgba(9, 20, 36, 0.85);
         backdrop-filter: blur(16px);
@@ -64,7 +74,6 @@ st.markdown("""
         text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
     }
 
-    /* Telemetry HUD Cards */
     .telemetry-card {
         background: rgba(8, 22, 40, 0.75);
         backdrop-filter: blur(10px);
@@ -93,7 +102,6 @@ st.markdown("""
         white-space: nowrap;
     }
 
-    /* Combat Chat Message System (Crystal Contrast) */
     [data-testid="stChatMessage"] {
         backdrop-filter: blur(12px) !important;
         -webkit-backdrop-filter: blur(12px) !important;
@@ -104,19 +112,16 @@ st.markdown("""
         font-size: 16px !important;
         font-weight: 600 !important;
     }
-    /* ARIS Message Bubble (High Contrast Navy Glass) */
     [data-testid="stChatMessage"]:nth-child(even) {
         background: rgba(8, 26, 48, 0.9) !important;
         border: 1px solid rgba(0, 229, 255, 0.55) !important;
         box-shadow: 0 4px 20px rgba(0, 229, 255, 0.12), inset 0 0 10px rgba(0, 229, 255, 0.04) !important;
     }
-    /* Commander (User) Message Bubble */
     [data-testid="stChatMessage"]:nth-child(odd) {
         background: rgba(14, 30, 52, 0.8) !important;
         border: 1px solid rgba(56, 189, 248, 0.35) !important;
     }
 
-    /* Message Typography: Super Clean White & Cyan Highlights */
     [data-testid="stChatMessage"] p, 
     [data-testid="stChatMessage"] li, 
     [data-testid="stChatMessage"] span {
@@ -127,7 +132,6 @@ st.markdown("""
         text-shadow: 0 0 8px rgba(0, 229, 255, 0.4) !important;
     }
 
-    /* Code Blocks */
     pre, code {
         background-color: #020617 !important;
         color: #38bdf8 !important;
@@ -135,7 +139,6 @@ st.markdown("""
         border-radius: 8px !important;
     }
 
-    /* Tactical Chat Input Box */
     .stTextInput input, .stChatInput textarea {
         background: rgba(6, 18, 32, 0.9) !important;
         border: 1px solid rgba(0, 229, 255, 0.6) !important;
@@ -143,10 +146,6 @@ st.markdown("""
         font-size: 16px !important;
         border-radius: 10px !important;
         box-shadow: 0 0 15px rgba(0, 229, 255, 0.15) !important;
-    }
-    .stTextInput input:focus, .stChatInput textarea:focus {
-        border-color: #00e5ff !important;
-        box-shadow: 0 0 25px rgba(0, 229, 255, 0.35) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -174,7 +173,6 @@ def save_longterm_memory(memories):
     except Exception:
         pass
 
-# --- SESSION INITIALIZATIONS ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "memory_vault" not in st.session_state:
@@ -187,7 +185,6 @@ def get_groq_client():
         return None
     return Groq(api_key=api_key.strip())
 
-# --- DYNAMIC ACTIVE TEXT MODEL DISCOVERY ---
 @st.cache_data(ttl=900)
 def discover_usable_models():
     client = get_groq_client()
@@ -227,106 +224,151 @@ def discover_usable_models():
 active_models_list = discover_usable_models()
 primary_model_name = active_models_list[0] if active_models_list else "openai/gpt-oss-120b"
 
-# --- 3D INTERACTIVE HOLO-REACTOR & AUDIO TRANSMITTER ---
-holo_reactor_html = """
+# --- LIVE ARIS INDUSTRIES GLOWING HOLOGRAPHIC CORE ---
+aris_hologram_core_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
 <style>
-  body { margin: 0; overflow: hidden; background: transparent; }
-  #canvas-container { width: 100%; height: 215px; position: relative; }
-  #voice-btn {
+  body {{ margin: 0; overflow: hidden; background: transparent; display: flex; justify-content: center; align-items: center; }}
+  #hologram-stage {{
+    position: relative;
+    width: 100%;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }}
+
+  /* Outer Energy Arc Rings */
+  .energy-ring-outer {{
     position: absolute;
-    bottom: 6px;
-    left: 50%;
-    transform: translateX(-50%);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 2px dashed rgba(0, 229, 255, 0.45);
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
+    animation: spinClockwise 18s linear infinite;
+  }}
+
+  .energy-ring-inner {{
+    position: absolute;
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    border-top: 3px solid #00e5ff;
+    border-bottom: 3px solid #0284c7;
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+    animation: spinCounter 10s linear infinite;
+  }}
+
+  /* ARIS Logo Container with 3D Tilt and Heartbeat Glow */
+  .logo-core {{
+    position: relative;
+    width: 155px;
+    height: 155px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 
+      0 0 35px rgba(0, 229, 255, 0.7),
+      inset 0 0 20px rgba(0, 229, 255, 0.5);
+    border: 2px solid rgba(0, 229, 255, 0.8);
+    animation: reactorPulse 3.5s ease-in-out infinite;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out;
+  }}
+
+  .logo-core img {{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }}
+
+  /* Keyframe Animations */
+  @keyframes spinClockwise {{
+    from {{ transform: rotate(0deg); }}
+    to {{ transform: rotate(360deg); }}
+  }}
+  @keyframes spinCounter {{
+    from {{ transform: rotate(0deg); }}
+    to {{ transform: rotate(-360deg); }}
+  }}
+  @keyframes reactorPulse {{
+    0%, 100% {{
+      transform: scale(1);
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.5), inset 0 0 15px rgba(0, 229, 255, 0.4);
+    }}
+    50% {{
+      transform: scale(1.04);
+      box-shadow: 0 0 50px rgba(0, 229, 255, 0.85), inset 0 0 25px rgba(0, 229, 255, 0.7);
+    }}
+  }}
+
+  /* Voice Command Transmitter Button */
+  #voice-btn {{
+    position: absolute;
+    bottom: 4px;
     background: rgba(9, 24, 44, 0.85);
     border: 1px solid #00e5ff;
     color: #00e5ff;
-    font-family: 'Orbitron', monospace;
+    font-family: 'Orbitron', sans-serif;
     font-size: 11px;
     font-weight: 700;
-    padding: 7px 20px;
+    padding: 7px 22px;
     border-radius: 24px;
     cursor: pointer;
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
     transition: all 0.25s ease;
     letter-spacing: 1.5px;
-  }
-  #voice-btn:hover {
+  }}
+  #voice-btn:hover {{
     background: #00e5ff;
     color: #030712;
     box-shadow: 0 0 25px #00e5ff;
-  }
+  }}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-<div id="canvas-container">
+<div id="hologram-stage">
+  <div class="energy-ring-outer"></div>
+  <div class="energy-ring-inner"></div>
+  
+  <div class="logo-core" id="logoBox">
+    <img src="{logo_base64_src}" alt="ARIS INDUSTRIES CORE">
+  </div>
+
   <button id="voice-btn" onclick="toggleVoiceTransmission()">🎙️ TRANSMIT AUDIO [HOLD TO TALK]</button>
 </div>
 
 <script>
-  const container = document.getElementById('canvas-container');
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  container.appendChild(renderer.domElement);
+  // Mouse-tracking 3D Tilt Effect
+  const stage = document.getElementById('hologram-stage');
+  const logo = document.getElementById('logoBox');
 
-  const group = new THREE.Group();
-  scene.add(group);
+  stage.addEventListener('mousemove', (e) => {{
+    const rect = stage.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    logo.style.transform = `perspective(600px) rotateY(${{x * 0.12}}deg) rotateX(${{-y * 0.12}}deg)`;
+  }});
 
-  // Outer Torus Ring
-  const ring1 = new THREE.Mesh(
-    new THREE.TorusGeometry(2.35, 0.035, 16, 90),
-    new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
-  );
-  group.add(ring1);
+  stage.addEventListener('mouseleave', () => {{
+    logo.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
+  }});
 
-  // Mid Gyro Ring
-  const ring2 = new THREE.Mesh(
-    new THREE.TorusGeometry(1.75, 0.045, 16, 75),
-    new THREE.MeshBasicMaterial({ color: 0x0284c7, wireframe: true })
-  );
-  group.add(ring2);
-
-  // Core Plasma Icosahedron
-  const core = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.88, 2),
-    new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true })
-  );
-  group.add(core);
-
-  camera.position.z = 5.8;
-
-  let mouseX = 0, mouseY = 0;
-  window.addEventListener('mousemove', (e) => {
-    const rect = container.getBoundingClientRect();
-    mouseX = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
-    mouseY = -(((e.clientY - rect.top) / container.clientHeight) * 2 - 1);
-  });
-
-  function animate() {
-    requestAnimationFrame(animate);
-    ring1.rotation.z += 0.009;
-    ring2.rotation.x -= 0.012;
-    core.rotation.y += 0.015;
-
-    group.rotation.y += (mouseX * 0.7 - group.rotation.y) * 0.06;
-    group.rotation.x += (-mouseY * 0.7 - group.rotation.x) * 0.06;
-
-    renderer.render(scene, camera);
-  }
-  animate();
-
+  // Voice Recognition
   let recognition;
-  function toggleVoiceTransmission() {
+  function toggleVoiceTransmission() {{
     const btn = document.getElementById('voice-btn');
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {{
       alert("Browser speech recognition not supported.");
       return;
-    }
+    }}
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRec();
     recognition.lang = 'en-IN';
@@ -336,23 +378,23 @@ holo_reactor_html = """
     btn.style.borderColor = "#ff0055";
     btn.style.color = "#ff0055";
 
-    recognition.onresult = function(e) {
+    recognition.onresult = function(e) {{
       const transcript = e.results[0][0].transcript;
       btn.innerText = "⚡ TRANSMITTING...";
       const input = window.parent.document.querySelector('textarea[data-testid="stChatInputTextArea"]');
-      if (input) {
+      if (input) {{
         input.value = transcript;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('input', {{ bubbles: true }}));
         const submitBtn = window.parent.document.querySelector('button[data-testid="stChatInputSubmitButton"]');
         if (submitBtn) submitBtn.click();
-      }
-    };
-    recognition.onend = function() {
+      }}
+    }};
+    recognition.onend = function() {{
       btn.innerText = "🎙️ TRANSMIT AUDIO [HOLD TO TALK]";
       btn.style.borderColor = "#00e5ff";
       btn.style.color = "#00e5ff";
-    };
-  }
+    }};
+  }}
 </script>
 </body>
 </html>
@@ -403,15 +445,15 @@ def aris_speak(text):
     components.html(js, height=0, width=0)
 
 # --- TACTICAL HEADER INTERFACE ---
-st.markdown(f"""
+st.markdown("""
 <div class="hud-title-box">
     <h1 class="hud-title">ARIS // TACTICAL COMMAND</h1>
     <div class="hud-subtitle">"ARIS IS MY CO-PILOT" // COMMAND MATRIX INITIATED // MAYANK</div>
 </div>
 """, unsafe_allow_html=True)
 
-# 3D Reactor
-components.html(holo_reactor_html, height=220)
+# 3D Glowing ARIS Hologram
+components.html(aris_hologram_core_html, height=255)
 
 # STARK-TIER TELEMETRY HUD
 c1, c2, c3, c4 = st.columns(4)
@@ -426,14 +468,13 @@ with c4:
 
 st.write("")
 
-# --- INFERENCE ENGINE WITH ADAPTIVE LANGUAGE LOGIC ---
+# --- INFERENCE ENGINE ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
         yield "Boss, GROQ_API_KEY is not found in Secrets. Please verify your configuration."
         return
 
-    # Memory Logging
     q_low = query.lower()
     memory_triggers = ["remember", "my project", "yaad rakh", "mera", "meri"]
     if any(t in q_low for t in memory_triggers) and len(query) < 95:
