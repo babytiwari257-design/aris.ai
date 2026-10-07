@@ -2,7 +2,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import os
 import json
-import base64
 from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
@@ -12,17 +11,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-
-# --- BASE64 LOGO LOADER ---
-def get_base64_logo():
-    logo_path = "aris_logo.png"
-    if os.path.exists(logo_path):
-        with open(logo_path, "rb") as f:
-            encoded = base64.b64encode(f.read()).decode()
-            return f"data:image/png;base64,{encoded}"
-    return ""
-
-logo_base64_src = get_base64_logo()
 
 # --- ULTIMATE OLED OBSIDIAN GLASS HUD ---
 st.markdown("""
@@ -224,93 +212,110 @@ def discover_usable_models():
 active_models_list = discover_usable_models()
 primary_model_name = active_models_list[0] if active_models_list else "openai/gpt-oss-120b"
 
-# --- LIVE ARIS INDUSTRIES GLOWING HOLOGRAPHIC CORE ---
-aris_hologram_core_html = f"""
+# --- LIVE METALLIC "A" INSIGNIA WITH ROTATING ARCS & PARTICLES ---
+aris_hologram_core_html = """
 <!DOCTYPE html>
 <html>
 <head>
 <style>
-  body {{ margin: 0; overflow: hidden; background: transparent; display: flex; justify-content: center; align-items: center; }}
-  #hologram-stage {{
+  body { margin: 0; overflow: hidden; background: transparent; display: flex; justify-content: center; align-items: center; }
+  #hologram-stage {
     position: relative;
     width: 100%;
-    height: 250px;
+    height: 270px;
     display: flex;
     justify-content: center;
     align-items: center;
-  }}
+  }
 
-  /* Outer Energy Arc Rings */
-  .energy-ring-outer {{
+  /* Outer Ambient Cyan Orbit */
+  .energy-ring-outer {
     position: absolute;
-    width: 220px;
-    height: 220px;
+    width: 250px;
+    height: 250px;
     border-radius: 50%;
-    border: 2px dashed rgba(0, 229, 255, 0.45);
-    box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
-    animation: spinClockwise 18s linear infinite;
-  }}
+    border: 1px dashed rgba(0, 229, 255, 0.35);
+    box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
+    animation: spinClockwise 22s linear infinite;
+  }
 
-  .energy-ring-inner {{
+  /* Mid Segmented Gyro Ring */
+  .energy-ring-inner {
     position: absolute;
-    width: 190px;
-    height: 190px;
+    width: 215px;
+    height: 215px;
     border-radius: 50%;
     border-top: 3px solid #00e5ff;
     border-bottom: 3px solid #0284c7;
     border-left: 1px solid transparent;
     border-right: 1px solid transparent;
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
-    animation: spinCounter 10s linear infinite;
-  }}
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
+    animation: spinCounter 12s linear infinite;
+  }
 
-  /* ARIS Logo Container with 3D Tilt and Heartbeat Glow */
-  .logo-core {{
+  /* Logo Shield Node */
+  .logo-core {
     position: relative;
-    width: 155px;
-    height: 155px;
+    width: 175px;
+    height: 175px;
     border-radius: 50%;
-    overflow: hidden;
+    background: radial-gradient(circle, #071526 30%, #030a14 80%, #010408 100%);
+    box-shadow: 
+      0 0 40px rgba(0, 229, 255, 0.6),
+      inset 0 0 25px rgba(0, 229, 255, 0.4);
+    border: 2px solid rgba(0, 229, 255, 0.7);
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    box-shadow: 
-      0 0 35px rgba(0, 229, 255, 0.7),
-      inset 0 0 20px rgba(0, 229, 255, 0.5);
-    border: 2px solid rgba(0, 229, 255, 0.8);
     animation: reactorPulse 3.5s ease-in-out infinite;
     transform-style: preserve-3d;
     transition: transform 0.1s ease-out;
-  }}
+    cursor: pointer;
+  }
 
-  .logo-core img {{
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }}
+  /* Built-in High Precision Metallic "A" Insignia */
+  .insignia-svg {
+    width: 110px;
+    height: 110px;
+    filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.8));
+    animation: circuitPulse 2.5s ease-in-out infinite;
+  }
 
-  /* Keyframe Animations */
-  @keyframes spinClockwise {{
-    from {{ transform: rotate(0deg); }}
-    to {{ transform: rotate(360deg); }}
-  }}
-  @keyframes spinCounter {{
-    from {{ transform: rotate(0deg); }}
-    to {{ transform: rotate(-360deg); }}
-  }}
-  @keyframes reactorPulse {{
-    0%, 100% {{
+  .brand-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #e2e8f0;
+    margin-top: 4px;
+    text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+  }
+
+  @keyframes spinClockwise {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes spinCounter {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
+  }
+  @keyframes reactorPulse {
+    0%, 100% {
       transform: scale(1);
-      box-shadow: 0 0 30px rgba(0, 229, 255, 0.5), inset 0 0 15px rgba(0, 229, 255, 0.4);
-    }}
-    50% {{
-      transform: scale(1.04);
-      box-shadow: 0 0 50px rgba(0, 229, 255, 0.85), inset 0 0 25px rgba(0, 229, 255, 0.7);
-    }}
-  }}
+      box-shadow: 0 0 35px rgba(0, 229, 255, 0.5), inset 0 0 18px rgba(0, 229, 255, 0.35);
+    }
+    50% {
+      transform: scale(1.03);
+      box-shadow: 0 0 55px rgba(0, 229, 255, 0.85), inset 0 0 28px rgba(0, 229, 255, 0.6);
+    }
+  }
+  @keyframes circuitPulse {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(0, 229, 255, 1)); }
+  }
 
-  /* Voice Command Transmitter Button */
-  #voice-btn {{
+  #voice-btn {
     position: absolute;
     bottom: 4px;
     background: rgba(9, 24, 44, 0.85);
@@ -325,12 +330,12 @@ aris_hologram_core_html = f"""
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
     transition: all 0.25s ease;
     letter-spacing: 1.5px;
-  }}
-  #voice-btn:hover {{
+  }
+  #voice-btn:hover {
     background: #00e5ff;
     color: #030712;
     box-shadow: 0 0 25px #00e5ff;
-  }}
+  }
 </style>
 </head>
 <body>
@@ -339,215 +344,7 @@ aris_hologram_core_html = f"""
   <div class="energy-ring-inner"></div>
   
   <div class="logo-core" id="logoBox">
-    <img src="{logo_base64_src}" alt="ARIS INDUSTRIES CORE">
-  </div>
-
-  <button id="voice-btn" onclick="toggleVoiceTransmission()">🎙️ TRANSMIT AUDIO [HOLD TO TALK]</button>
-</div>
-
-<script>
-  // Mouse-tracking 3D Tilt Effect
-  const stage = document.getElementById('hologram-stage');
-  const logo = document.getElementById('logoBox');
-
-  stage.addEventListener('mousemove', (e) => {{
-    const rect = stage.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    logo.style.transform = `perspective(600px) rotateY(${{x * 0.12}}deg) rotateX(${{-y * 0.12}}deg)`;
-  }});
-
-  stage.addEventListener('mouseleave', () => {{
-    logo.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
-  }});
-
-  // Voice Recognition
-  let recognition;
-  function toggleVoiceTransmission() {{
-    const btn = document.getElementById('voice-btn');
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {{
-      alert("Browser speech recognition not supported.");
-      return;
-    }}
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRec();
-    recognition.lang = 'en-IN';
-    recognition.start();
-
-    btn.innerText = "🔴 LISTENING TO BOSS...";
-    btn.style.borderColor = "#ff0055";
-    btn.style.color = "#ff0055";
-
-    recognition.onresult = function(e) {{
-      const transcript = e.results[0][0].transcript;
-      btn.innerText = "⚡ TRANSMITTING...";
-      const input = window.parent.document.querySelector('textarea[data-testid="stChatInputTextArea"]');
-      if (input) {{
-        input.value = transcript;
-        input.dispatchEvent(new Event('input', {{ bubbles: true }}));
-        const submitBtn = window.parent.document.querySelector('button[data-testid="stChatInputSubmitButton"]');
-        if (submitBtn) submitBtn.click();
-      }}
-    }};
-    recognition.onend = function() {{
-      btn.innerText = "🎙️ TRANSMIT AUDIO [HOLD TO TALK]";
-      btn.style.borderColor = "#00e5ff";
-      btn.style.color = "#00e5ff";
-    }};
-  }}
-</script>
-</body>
-</html>
-"""
-
-# --- NATURAL HUMAN TTS VOICE ENGINE ---
-def aris_speak(text):
-    clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
-    clean = clean.replace('\n', ' ')[:220]
-    
-    js_template = """
-    <script>
-      function speakVoice() {
-        if (!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-        var utter = new SpeechSynthesisUtterance('__TEXT__');
-        var voices = window.speechSynthesis.getVoices();
-        
-        var selected = voices.find(function(v) {
-          return (v.name.includes("Natural") && (v.lang.includes("IN") || v.lang.includes("hi"))) ||
-                 v.name.includes("Neerja") ||
-                 v.name.includes("Prabhat") ||
-                 v.name.includes("Google हिन्दी") ||
-                 v.lang === "hi-IN";
-        });
-        
-        if (!selected) {
-          selected = voices.find(function(v) {
-            return v.lang === "en-IN" || v.lang === "en-US" || v.name.includes("Natural");
-          });
-        }
-        
-        if (selected) utter.voice = selected;
-        utter.pitch = 1.0;
-        utter.rate = 1.04;
-        window.speechSynthesis.speak(utter);
-      }
-
-      if (window.speechSynthesis.getVoices().length === 0) {
-        window.speechSynthesis.onvoiceschanged = speakVoice;
-      } else {
-        speakVoice();
-      }
-    </script>
-    """
-    
-    js = js_template.replace('__TEXT__', clean)
-    components.html(js, height=0, width=0)
-
-# --- TACTICAL HEADER INTERFACE ---
-st.markdown("""
-<div class="hud-title-box">
-    <h1 class="hud-title">ARIS // TACTICAL COMMAND</h1>
-    <div class="hud-subtitle">"ARIS IS MY CO-PILOT" // COMMAND MATRIX INITIATED // MAYANK</div>
-</div>
-""", unsafe_allow_html=True)
-
-# 3D Glowing ARIS Hologram
-components.html(aris_hologram_core_html, height=255)
-
-# STARK-TIER TELEMETRY HUD
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.markdown('<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">CO-PILOT ENGAGED</div></div>', unsafe_allow_html=True)
-with c2:
-    st.markdown(f'<div class="telemetry-card">TACTICAL LOGIC<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()} // SYNC</div></div>', unsafe_allow_html=True)
-with c3:
-    st.markdown('<div class="telemetry-card">COGNITIVE STREAM<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
-with c4:
-    st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
-
-st.write("")
-
-# --- INFERENCE ENGINE ---
-def run_aris_core(query):
-    client = get_groq_client()
-    if not client:
-        yield "Boss, GROQ_API_KEY is not found in Secrets. Please verify your configuration."
-        return
-
-    q_low = query.lower()
-    memory_triggers = ["remember", "my project", "yaad rakh", "mera", "meri"]
-    if any(t in q_low for t in memory_triggers) and len(query) < 95:
-        entry = f"Intel: {query}"
-        if entry not in st.session_state.memory_vault:
-            st.session_state.memory_vault.append(entry)
-            save_longterm_memory(st.session_state.memory_vault)
-
-    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
-
-    system_prompt = f"""
-You are ARIS, the elite tactical AI lieutenant and trusted right-hand partner built exclusively for Boss (Mayank).
-
-LANGUAGE & COMMUNICATION PROTOCOL:
-1. DEFAULT LANGUAGE: Speak in clean, professional, crisp English by default.
-2. ADAPTIVE SWITCHING: If Boss speaks to you in Hindi or Hinglish, adapt naturally into fluent, confident Hinglish mix (Roman script). Do NOT force Hinglish if Boss is speaking in standard English.
-3. ZERO ROBOTIC FLUFF: Never say "Certainly!", "As an AI language model", "How may I assist you?", or give corporate customer care replies. Sound like an intelligent, confident human partner.
-4. LOYALTY & ADDRESS: Mayank is Boss. Treat him with authentic respect, wit, and confidence.
-5. CLARITY: Keep answers sharp, high-value, and direct.
-
-[BOSS ARCHIVED INTEL]:
-{memories}
-"""
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for msg in st.session_state.chat_history[-4:]:
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": query})
-
-    stream_success = False
-    last_err = ""
-
-    for model_candidate in active_models_list:
-        try:
-            completion = client.chat.completions.create(
-                model=model_candidate,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=2048,
-                stream=True
-            )
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    yield content
-            stream_success = True
-            break
-        except Exception as e:
-            last_err = str(e)
-            continue
-
-    if not stream_success:
-        yield f"Neural link connection failed: {last_err}"
-
-# --- TIMELINE RENDER ---
-for msg in st.session_state.chat_history:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-# --- USER COMMAND DISPATCH ---
-user_input = st.chat_input("Command ARIS, Boss...")
-
-if user_input:
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant"):
-        box = st.empty()
-        full_resp = ""
-        for chunk in run_aris_core(user_input):
-            full_resp += chunk
-            box.markdown(full_resp + " ▌")
-        box.markdown(full_resp)
-        st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
-        aris_speak(full_resp)
+    <!-- Precision Vector "A" Insignia with Internal Circuits -->
+    <svg class="insignia-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="metallicChrome" x1="
