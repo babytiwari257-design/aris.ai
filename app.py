@@ -347,4 +347,246 @@ aris_hologram_core_html = """
     <!-- Precision Vector "A" Insignia with Internal Circuits -->
     <svg class="insignia-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="metallicChrome" x1="
+        <linearGradient id="metallicChrome" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#94a3b8" />
+          <stop offset="35%" stop-color="#f8fafc" />
+          <stop offset="60%" stop-color="#475569" />
+          <stop offset="100%" stop-color="#cbd5e1" />
+        </linearGradient>
+        <linearGradient id="cyanCircuit" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#00e5ff" />
+          <stop offset="100%" stop-color="#0284c7" />
+        </linearGradient>
+      </defs>
+
+      <!-- Outer Hex Armor Wings -->
+      <polygon points="100,22 175,65 175,135 100,178 25,135 25,65" 
+               stroke="#00e5ff" stroke-width="2.5" fill="none" opacity="0.4" />
+
+      <!-- Metallic Chrome "A" Outer Frame -->
+      <path d="M 100,32 L 152,142 L 126,142 L 114,116 L 86,116 L 74,142 L 48,142 Z" 
+            fill="url(#metallicChrome)" stroke="#00e5ff" stroke-width="2" />
+
+      <!-- "A" Inner Cavity -->
+      <polygon points="100,68 111,94 89,94" fill="#030a14" stroke="#00e5ff" stroke-width="1.5" />
+
+      <!-- Glowing Circuit Inlays (Left Wing) -->
+      <path d="M 66,118 L 84,74" stroke="url(#cyanCircuit)" stroke-width="2.5" stroke-linecap="round" />
+      <circle cx="66" cy="118" r="3" fill="#00e5ff" />
+
+      <!-- Glowing Circuit Inlays (Right Wing) -->
+      <path d="M 134,118 L 116,74" stroke="url(#cyanCircuit)" stroke-width="2.5" stroke-linecap="round" />
+      <circle cx="134" cy="118" r="3" fill="#00e5ff" />
+      <circle cx="100" cy="50" r="3.5" fill="#00e5ff" />
+    </svg>
+
+    <div class="brand-text">ARIS INDUSTRIES</div>
+  </div>
+
+  <button id="voice-btn" onclick="toggleVoiceTransmission()">🎙️ TRANSMIT AUDIO [HOLD TO TALK]</button>
+</div>
+
+<script>
+  const stage = document.getElementById('hologram-stage');
+  const logo = document.getElementById('logoBox');
+
+  stage.addEventListener('mousemove', (e) => {
+    const rect = stage.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    logo.style.transform = `perspective(600px) rotateY(${x * 0.12}deg) rotateX(${-y * 0.12}deg)`;
+  });
+
+  stage.addEventListener('mouseleave', () => {
+    logo.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
+  });
+
+  let recognition;
+  function toggleVoiceTransmission() {
+    const btn = document.getElementById('voice-btn');
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert("Browser speech recognition not supported.");
+      return;
+    }
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRec();
+    recognition.lang = 'en-IN';
+    recognition.start();
+
+    btn.innerText = "🔴 LISTENING TO BOSS...";
+    btn.style.borderColor = "#ff0055";
+    btn.style.color = "#ff0055";
+
+    recognition.onresult = function(e) {
+      const transcript = e.results[0][0].transcript;
+      btn.innerText = "⚡ TRANSMITTING...";
+      const input = window.parent.document.querySelector('textarea[data-testid="stChatInputTextArea"]');
+      if (input) {
+        input.value = transcript;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const submitBtn = window.parent.document.querySelector('button[data-testid="stChatInputSubmitButton"]');
+        if (submitBtn) submitBtn.click();
+      }
+    };
+    recognition.onend = function() {
+      btn.innerText = "🎙️ TRANSMIT AUDIO [HOLD TO TALK]";
+      btn.style.borderColor = "#00e5ff";
+      btn.style.color = "#00e5ff";
+    };
+  }
+</script>
+</body>
+</html>
+"""
+
+# --- NATURAL HUMAN TTS VOICE ENGINE ---
+def aris_speak(text):
+    clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
+    clean = clean.replace('\n', ' ')[:220]
+    
+    js_template = """
+    <script>
+      function speakVoice() {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        var utter = new SpeechSynthesisUtterance('__TEXT__');
+        var voices = window.speechSynthesis.getVoices();
+        
+        var selected = voices.find(function(v) {
+          return (v.name.includes("Natural") && (v.lang.includes("IN") || v.lang.includes("hi"))) ||
+                 v.name.includes("Neerja") ||
+                 v.name.includes("Prabhat") ||
+                 v.name.includes("Google हिन्दी") ||
+                 v.lang === "hi-IN";
+        });
+        
+        if (!selected) {
+          selected = voices.find(function(v) {
+            return v.lang === "en-IN" || v.lang === "en-US" || v.name.includes("Natural");
+          });
+        }
+        
+        if (selected) utter.voice = selected;
+        utter.pitch = 1.0;
+        utter.rate = 1.04;
+        window.speechSynthesis.speak(utter);
+      }
+
+      if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = speakVoice;
+      } else {
+        speakVoice();
+      }
+    </script>
+    """
+    
+    js = js_template.replace('__TEXT__', clean)
+    components.html(js, height=0, width=0)
+
+# --- TACTICAL HEADER INTERFACE ---
+st.markdown("""
+<div class="hud-title-box">
+    <h1 class="hud-title">ARIS // TACTICAL COMMAND</h1>
+    <div class="hud-subtitle">"ARIS IS MY CO-PILOT" // COMMAND MATRIX INITIATED // MAYANK</div>
+</div>
+""", unsafe_allow_html=True)
+
+# 3D Glowing ARIS Hologram
+components.html(aris_hologram_core_html, height=275)
+
+# STARK-TIER TELEMETRY HUD
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown('<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">CO-PILOT ENGAGED</div></div>', unsafe_allow_html=True)
+with c2:
+    st.markdown(f'<div class="telemetry-card">TACTICAL LOGIC<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()} // SYNC</div></div>', unsafe_allow_html=True)
+with c3:
+    st.markdown('<div class="telemetry-card">COGNITIVE STREAM<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
+with c4:
+    st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
+
+st.write("")
+
+# --- INFERENCE ENGINE ---
+def run_aris_core(query):
+    client = get_groq_client()
+    if not client:
+        yield "Boss, GROQ_API_KEY is not found in Secrets. Please verify your configuration."
+        return
+
+    q_low = query.lower()
+    memory_triggers = ["remember", "my project", "yaad rakh", "mera", "meri"]
+    if any(t in q_low for t in memory_triggers) and len(query) < 95:
+        entry = f"Intel: {query}"
+        if entry not in st.session_state.memory_vault:
+            st.session_state.memory_vault.append(entry)
+            save_longterm_memory(st.session_state.memory_vault)
+
+    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
+
+    system_prompt = f"""
+You are ARIS, the elite tactical AI lieutenant and trusted right-hand partner built exclusively for Boss (Mayank).
+
+LANGUAGE & COMMUNICATION PROTOCOL:
+1. DEFAULT LANGUAGE: Speak in clean, professional, crisp English by default.
+2. ADAPTIVE SWITCHING: If Boss speaks to you in Hindi or Hinglish, adapt naturally into fluent, confident Hinglish mix (Roman script). Do NOT force Hinglish if Boss is speaking in standard English.
+3. ZERO ROBOTIC FLUFF: Never say "Certainly!", "As an AI language model", "How may I assist you?", or give corporate customer care replies. Sound like an intelligent, confident human partner.
+4. LOYALTY & ADDRESS: Mayank is Boss. Treat him with authentic respect, wit, and confidence.
+5. CLARITY: Keep answers sharp, high-value, and direct.
+
+[BOSS ARCHIVED INTEL]:
+{memories}
+"""
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in st.session_state.chat_history[-4:]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": query})
+
+    stream_success = False
+    last_err = ""
+
+    for model_candidate in active_models_list:
+        try:
+            completion = client.chat.completions.create(
+                model=model_candidate,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2048,
+                stream=True
+            )
+            for chunk in completion:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+            stream_success = True
+            break
+        except Exception as e:
+            last_err = str(e)
+            continue
+
+    if not stream_success:
+        yield f"Neural link connection failed: {last_err}"
+
+# --- TIMELINE RENDER ---
+for msg in st.session_state.chat_history:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+# --- USER COMMAND DISPATCH ---
+user_input = st.chat_input("Command ARIS, Boss...")
+
+if user_input:
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    with st.chat_message("assistant"):
+        box = st.empty()
+        full_resp = ""
+        for chunk in run_aris_core(user_input):
+            full_resp += chunk
+            box.markdown(full_resp + " ▌")
+        box.markdown(full_resp)
+        st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
+        aris_speak(full_resp)
