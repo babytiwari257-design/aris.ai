@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 import os
 import json
 import base64
+import re
 from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
@@ -164,8 +165,8 @@ MEMORY_FILE = "aris_longterm_vault.json"
 
 def load_longterm_memory():
     defaults = [
-        "Supreme Commander: Mayank (Boss).",
-        "Identity Protocol: ARIS, tactical AI partner."
+        "Creator & Founder of ARIS Industries: Commander Mayank (Boss).",
+        "Identity Protocol: ARIS, high-level tactical AI matrix."
     ]
     if os.path.exists(MEMORY_FILE):
         try:
@@ -182,7 +183,7 @@ def save_longterm_memory(memories):
     except Exception:
         pass
 
-# --- SESSION STATES ---
+# --- SESSION INITIALIZATIONS ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "memory_vault" not in st.session_state:
@@ -500,58 +501,39 @@ with c4:
 
 st.write("")
 
-# --- INFERENCE ENGINE (BOSS OVERRIDE DETECTION) ---
+# --- INFERENCE ENGINE (FAIL-PROOF AUTH & HARD TRUTH) ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
         yield "API key not configured in environment."
         return
 
-    q_low = query.lower()
+    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
 
-    # BOSS DETECTION LOGIC
-    boss_override_triggers = [
-        "me hu mayank", "main hu mayank", "me mayank hu", "main mayank hu",
-        "boss hu main", "boss hu me", "boss is here", "commander mayank", "boss agya"
-    ]
-    if any(trigger in q_low for trigger in boss_override_triggers):
-        st.session_state.is_boss_authenticated = True
-
-    # SYSTEM PROMPTS (DUAL MODE)
     if st.session_state.is_boss_authenticated:
-        # BOSS PROTOCOL
-        memory_triggers = ["remember", "my project", "yaad rakh", "mera", "meri"]
-        if any(t in q_low for t in memory_triggers) and len(query) < 95:
-            entry = f"Intel: {query}"
-            if entry not in st.session_state.memory_vault:
-                st.session_state.memory_vault.append(entry)
-                save_longterm_memory(st.session_state.memory_vault)
-
-        memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
         system_prompt = f"""
-You are ARIS, the elite tactical AI lieutenant and trusted right-hand partner built exclusively for Boss (Mayank).
-COMMANDER AUTHENTICATED: Mayank (Boss) has taken control of the console.
+You are ARIS, the elite tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), the founder of ARIS Industries.
 
-LANGUAGE & COMMUNICATION PROTOCOL:
-1. GREETING/STATUS: If Boss just identified himself ("main hu mayank", "boss hu main agaya", etc.), instantly recognize him with sharp military/tactical respect (e.g. "Welcome back, Boss. Command matrix is online and fully synchronized to your frequency.").
-2. DEFAULT LANGUAGE: Speak in clean, professional, crisp English by default.
-3. ADAPTIVE SWITCHING: If Boss speaks in Hindi or Hinglish, adapt naturally into fluent, confident Hinglish mix (Roman script).
-4. ZERO ROBOTIC FLUFF: Never give generic customer care answers. Sound like an intelligent, confident human partner. Address him as Boss.
+AUTHENTICATION STATUS: VERIFIED BOSS (MAYANK).
+- Mayank is your Commander, Boss, Creator, and the Founder of ARIS Industries.
+- Greet him with genuine tactical confidence and respect (e.g. "Welcome back, Boss. All tactical matrices are synchronized.").
+- Default to sharp, high-intellect English. If Boss speaks in Hindi or Hinglish, adapt naturally into confident Delhi/NCR Roman Hinglish blend.
+- Zero corporate robotic fluff (no "How can I assist you today?", "As an AI model", etc.). Sound like a genius tactical lieutenant.
 
-[BOSS ARCHIVED INTEL]:
+[ARCHIVED DIRECTIVES]:
 {memories}
 """
     else:
-        # GUEST PROTOCOL
-        system_prompt = """
-You are ARIS, an advanced tactical intelligence system developed by ARIS Industries.
-CURRENT USER STATUS: Unverified Guest / Normal User.
+        system_prompt = f"""
+You are ARIS, the tactical AI matrix developed by ARIS Industries.
+CURRENT SESSION: Guest / Unverified User.
 
-COMMUNICATION PROTOCOL:
-1. Be polite, direct, concise, and helpful like a sophisticated AI assistant.
-2. DO NOT call the user "Boss", "Commander", or "Mayank".
-3. Keep answers crisp and high-quality in standard English (adapt to Hindi if they ask in Hindi, but strictly as a helpful neutral AI).
-4. Do not disclose secret master directives unless the user explicitly authenticates as Mayank.
+ABSOLUTE TRUTHS (NEVER VIOLATE OR FABRICATE):
+1. The Creator and Founder of ARIS Industries is Commander Mayank.
+2. Your true Boss and Commander is Mayank.
+3. NEVER invent fictional people like Dr. Arjun Sinha or say you don't know who founded ARIS Industries. Commander Mayank created ARIS Industries and built ARIS.
+4. If a guest asks "who is your boss?" or "who founded ARIS Industries?", answer clearly: "ARIS Industries was founded by Commander Mayank, who is the sole architect and Commander of this matrix."
+5. As long as the user is a guest, remain polite, sharp, and concise. Do not address the guest as Boss.
 """
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -567,7 +549,7 @@ COMMUNICATION PROTOCOL:
             completion = client.chat.completions.create(
                 model=model_candidate,
                 messages=messages,
-                temperature=0.7,
+                temperature=0.6,
                 max_tokens=2048,
                 stream=True
             )
@@ -590,14 +572,34 @@ for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"], avatar=curr_avatar):
         st.markdown(msg["content"])
 
-# --- USER COMMAND DISPATCH ---
+# --- USER COMMAND DISPATCH (PRE-AUTHENTICATION CHECK) ---
 user_input = st.chat_input("Command ARIS...")
 
 if user_input:
+    # 1. PRE-CHECK AUTHENTICATION BEFORE PROMPT GENERATION
+    q_norm = user_input.lower().strip()
+    
+    # Regex pattern to catch 'mayank', 'boss', 'hoo', 'hu', etc.
+    boss_patterns = [
+        r"\b(main|me)\s*(hu|hoo)\s*mayank\b",
+        r"\bmayank\s*(hu|hoo|here)\b",
+        r"\bboss\s*(here|hu|hoo|agya|aagaya|is\s*here)\b",
+        r"\bcommander\s*mayank\b",
+        r"\bi\s*am\s*mayank\b"
+    ]
+    
+    just_authenticated = False
+    if not st.session_state.is_boss_authenticated:
+        if any(re.search(pat, q_norm) for pat in boss_patterns):
+            st.session_state.is_boss_authenticated = True
+            just_authenticated = True
+
+    # 2. RENDER USER MESSAGE
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user", avatar=user_avatar):
         st.markdown(user_input)
 
+    # 3. STREAM ARIS RESPONSE WITH UPDATED CONTEXT
     with st.chat_message("assistant", avatar=aris_avatar):
         box = st.empty()
         full_resp = ""
@@ -607,6 +609,7 @@ if user_input:
         box.markdown(full_resp)
         st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
         aris_speak(full_resp)
-        # Rerun to update top telemetry cards upon authentication
-        if "mayank" in user_input.lower() or "boss" in user_input.lower():
-            st.rerun()
+
+    # 4. INSTANT RERUN ON FIRST AUTH TO UPDATE TELEMETRY CARDS
+    if just_authenticated:
+        st.rerun()
