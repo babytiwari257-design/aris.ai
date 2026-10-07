@@ -6,121 +6,147 @@ from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // COMMAND MATRIX",
+    page_title="ARIS // TACTICAL COMMAND",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- HIGH-CONTRAST READABLE COMBAT HUD STYLING ---
+# --- ULTIMATE OLED OBSIDIAN GLASS HUD ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
-    /* Global Background: Deep Carbon Black for maximum readability */
+    /* Global Viewport: Deep Obsidian with Cyber Ambient Lighting */
     .stApp {
-        background-color: #05080f !important;
-        background-image: radial-gradient(circle at 50% 0%, #0d1b2a 0%, #05080f 80%) !important;
-        color: #f1f5f9 !important;
-        font-family: 'Inter', sans-serif !important;
+        background: 
+            radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.08) 0%, transparent 60%),
+            radial-gradient(circle at 10% 80%, rgba(2, 132, 199, 0.05) 0%, transparent 40%),
+            linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+            #030712 !important;
+        background-size: 100% 100%, 100% 100%, 35px 35px, 35px 35px, 100% 100% !important;
+        color: #f8fafc !important;
+        font-family: 'Rajdhani', sans-serif !important;
     }
     header, footer { visibility: hidden !important; }
 
-    /* Header Bar */
+    /* Frosted Glass Header Console */
     .hud-title-box {
-        background: #09131f;
-        border: 1px solid #00e5ff;
-        border-radius: 12px;
-        padding: 16px 24px;
+        background: rgba(9, 20, 36, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(0, 229, 255, 0.5);
+        border-radius: 14px;
+        padding: 16px 28px;
         text-align: center;
-        box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+        box-shadow: 
+            0 0 25px rgba(0, 229, 255, 0.18),
+            inset 0 0 15px rgba(0, 229, 255, 0.06);
         margin-bottom: 12px;
     }
     .hud-title {
         font-family: 'Orbitron', sans-serif;
         color: #00e5ff;
-        font-size: 26px;
+        font-size: 27px;
         font-weight: 900;
-        letter-spacing: 3px;
+        letter-spacing: 4px;
+        text-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
         margin: 0;
     }
     .hud-subtitle {
-        color: #94a3b8;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        color: #38bdf8;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 3px;
         margin-top: 6px;
         text-transform: uppercase;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
     }
 
-    /* Telemetry Cards */
+    /* Telemetry HUD Cards */
     .telemetry-card {
-        background: #0d1829;
-        border: 1px solid #1e3a5f;
-        border-radius: 8px;
+        background: rgba(8, 22, 40, 0.75);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(2, 132, 199, 0.4);
+        border-radius: 10px;
         padding: 10px;
         text-align: center;
         font-family: 'Orbitron', sans-serif;
         font-size: 11px;
         color: #38bdf8;
+        box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.05);
+        transition: all 0.3s ease;
+    }
+    .telemetry-card:hover {
+        border-color: #00e5ff;
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
     }
     .telemetry-val {
         color: #ffffff;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
-        margin-top: 2px;
+        margin-top: 3px;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    /* Chat Messages: Pure contrast for effortless reading */
+    /* Combat Chat Message System (Crystal Contrast) */
     [data-testid="stChatMessage"] {
-        padding: 14px 18px !important;
-        border-radius: 10px !important;
-        margin-bottom: 10px !important;
-        line-height: 1.6 !important;
-        font-size: 15px !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        padding: 16px 20px !important;
+        border-radius: 12px !important;
+        margin-bottom: 12px !important;
+        line-height: 1.65 !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
     }
-    /* ARIS Message Bubble */
+    /* ARIS Message Bubble (High Contrast Navy Glass) */
     [data-testid="stChatMessage"]:nth-child(even) {
-        background-color: #0b1a2e !important;
-        border: 1px solid #0284c7 !important;
-        color: #f8fafc !important;
+        background: rgba(8, 26, 48, 0.9) !important;
+        border: 1px solid rgba(0, 229, 255, 0.55) !important;
+        box-shadow: 0 4px 20px rgba(0, 229, 255, 0.12), inset 0 0 10px rgba(0, 229, 255, 0.04) !important;
     }
-    /* User Message Bubble */
+    /* Commander (User) Message Bubble */
     [data-testid="stChatMessage"]:nth-child(odd) {
-        background-color: #081320 !important;
-        border: 1px solid #1e293b !important;
-        color: #e2e8f0 !important;
+        background: rgba(14, 30, 52, 0.8) !important;
+        border: 1px solid rgba(56, 189, 248, 0.35) !important;
     }
 
-    /* Message inner markdown text force-bright */
+    /* Message Typography: Super Clean White & Cyan Highlights */
     [data-testid="stChatMessage"] p, 
     [data-testid="stChatMessage"] li, 
     [data-testid="stChatMessage"] span {
         color: #f8fafc !important;
-        font-weight: 400 !important;
     }
     [data-testid="stChatMessage"] strong {
-        color: #38bdf8 !important;
-        font-weight: 700 !important;
+        color: #00e5ff !important;
+        text-shadow: 0 0 8px rgba(0, 229, 255, 0.4) !important;
     }
 
-    /* Code Blocks within chat */
+    /* Code Blocks */
     pre, code {
-        background-color: #030712 !important;
+        background-color: #020617 !important;
         color: #38bdf8 !important;
-        border: 1px solid #1f2937 !important;
-        border-radius: 6px !important;
+        border: 1px solid rgba(0, 229, 255, 0.3) !important;
+        border-radius: 8px !important;
     }
 
-    /* Chat Input Area */
+    /* Tactical Chat Input Box */
     .stTextInput input, .stChatInput textarea {
-        background-color: #0b1320 !important;
-        border: 1px solid #0284c7 !important;
+        background: rgba(6, 18, 32, 0.9) !important;
+        border: 1px solid rgba(0, 229, 255, 0.6) !important;
         color: #ffffff !important;
-        font-size: 15px !important;
+        font-size: 16px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.15) !important;
+    }
+    .stTextInput input:focus, .stChatInput textarea:focus {
+        border-color: #00e5ff !important;
+        box-shadow: 0 0 25px rgba(0, 229, 255, 0.35) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -201,35 +227,35 @@ def discover_usable_models():
 active_models_list = discover_usable_models()
 primary_model_name = active_models_list[0] if active_models_list else "openai/gpt-oss-120b"
 
-# --- 3D INTERACTIVE HOLO-REACTOR & AUDIO ENGINE ---
+# --- 3D INTERACTIVE HOLO-REACTOR & AUDIO TRANSMITTER ---
 holo_reactor_html = """
 <!DOCTYPE html>
 <html>
 <head>
 <style>
   body { margin: 0; overflow: hidden; background: transparent; }
-  #canvas-container { width: 100%; height: 210px; position: relative; }
+  #canvas-container { width: 100%; height: 215px; position: relative; }
   #voice-btn {
     position: absolute;
     bottom: 6px;
     left: 50%;
     transform: translateX(-50%);
-    background: #0b1a2e;
+    background: rgba(9, 24, 44, 0.85);
     border: 1px solid #00e5ff;
     color: #00e5ff;
     font-family: 'Orbitron', monospace;
     font-size: 11px;
-    font-weight: bold;
-    padding: 7px 18px;
-    border-radius: 20px;
+    font-weight: 700;
+    padding: 7px 20px;
+    border-radius: 24px;
     cursor: pointer;
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
-    transition: all 0.25s;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
+    transition: all 0.25s ease;
     letter-spacing: 1.5px;
   }
   #voice-btn:hover {
     background: #00e5ff;
-    color: #05080f;
+    color: #030712;
     box-shadow: 0 0 25px #00e5ff;
   }
 </style>
@@ -251,20 +277,23 @@ holo_reactor_html = """
   const group = new THREE.Group();
   scene.add(group);
 
+  // Outer Torus Ring
   const ring1 = new THREE.Mesh(
-    new THREE.TorusGeometry(2.3, 0.03, 16, 90),
+    new THREE.TorusGeometry(2.35, 0.035, 16, 90),
     new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
   );
   group.add(ring1);
 
+  // Mid Gyro Ring
   const ring2 = new THREE.Mesh(
-    new THREE.TorusGeometry(1.7, 0.04, 16, 75),
+    new THREE.TorusGeometry(1.75, 0.045, 16, 75),
     new THREE.MeshBasicMaterial({ color: 0x0284c7, wireframe: true })
   );
   group.add(ring2);
 
+  // Core Plasma Icosahedron
   const core = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.85, 2),
+    new THREE.IcosahedronGeometry(0.88, 2),
     new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true })
   );
   group.add(core);
@@ -280,9 +309,9 @@ holo_reactor_html = """
 
   function animate() {
     requestAnimationFrame(animate);
-    ring1.rotation.z += 0.01;
+    ring1.rotation.z += 0.009;
     ring2.rotation.x -= 0.012;
-    core.rotation.y += 0.016;
+    core.rotation.y += 0.015;
 
     group.rotation.y += (mouseX * 0.7 - group.rotation.y) * 0.06;
     group.rotation.x += (-mouseY * 0.7 - group.rotation.x) * 0.06;
@@ -329,7 +358,7 @@ holo_reactor_html = """
 </html>
 """
 
-# --- NATURAL HUMAN TTS VOICE PICKER (SYNTAX-SAFE) ---
+# --- NATURAL HUMAN TTS VOICE ENGINE ---
 def aris_speak(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
@@ -373,27 +402,27 @@ def aris_speak(text):
     js = js_template.replace('__TEXT__', clean)
     components.html(js, height=0, width=0)
 
-# --- HEADER INTERFACE ---
+# --- TACTICAL HEADER INTERFACE ---
 st.markdown(f"""
 <div class="hud-title-box">
-    <h1 class="hud-title">ARIS // TACTICAL MATRIX</h1>
-    <div class="hud-subtitle">COMMANDER: MAYANK (BOSS) | CORE: {primary_model_name.upper()}</div>
+    <h1 class="hud-title">ARIS // TACTICAL COMMAND</h1>
+    <div class="hud-subtitle">"ARIS IS MY CO-PILOT" // COMMAND MATRIX INITIATED // MAYANK</div>
 </div>
 """, unsafe_allow_html=True)
 
 # 3D Reactor
-components.html(holo_reactor_html, height=215)
+components.html(holo_reactor_html, height=220)
 
-# Telemetry Cards
+# STARK-TIER TELEMETRY HUD
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.markdown('<div class="telemetry-card">STATUS<div class="telemetry-val">OPERATIONAL</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">CO-PILOT ENGAGED</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown(f'<div class="telemetry-card">CORE ENGINE<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">TACTICAL LOGIC<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()} // SYNC</div></div>', unsafe_allow_html=True)
 with c3:
-    st.markdown('<div class="telemetry-card">MODE<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">COGNITIVE STREAM<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
 with c4:
-    st.markdown(f'<div class="telemetry-card">MEMORY<div class="telemetry-val">{len(st.session_state.memory_vault)} STORED</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
