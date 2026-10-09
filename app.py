@@ -8,7 +8,7 @@ from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // COMMAND MATRIX",
+    page_title="ARIS // LEGENDARY COMMAND MATRIX",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -42,7 +42,7 @@ st.markdown("""
 
     .stApp {
         background: 
-            radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.08) 0%, transparent 60%),
+            radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.09) 0%, transparent 60%),
             radial-gradient(circle at 10% 80%, rgba(2, 132, 199, 0.05) 0%, transparent 40%),
             linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
             linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px),
@@ -54,10 +54,10 @@ st.markdown("""
     header, footer { visibility: hidden !important; }
 
     .hud-title-box {
-        background: rgba(9, 20, 36, 0.85);
+        background: rgba(9, 20, 36, 0.88);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(0, 229, 255, 0.5);
+        border: 1px solid rgba(0, 229, 255, 0.55);
         border-radius: 14px;
         padding: 16px 28px;
         text-align: center;
@@ -226,7 +226,6 @@ def discover_usable_models():
 
 discovered_models = discover_usable_models()
 
-# Dynamic Model Selector Based on Query Complexity
 def select_dynamic_model(query: str) -> str:
     heavy_triggers = ["code", "script", "analyze", "debug", "architecture", "plan", "complex", "write a"]
     if any(k in query.lower() for k in heavy_triggers) or len(query.split()) > 20:
@@ -238,8 +237,8 @@ def select_dynamic_model(query: str) -> str:
             return fast
     return discovered_models[0] if discovered_models else "llama-3.1-8b-instant"
 
-# --- 3D GLOWING ARIS VECTOR REACTOR ---
-aris_hologram_core_html = """
+# --- LEGENDARY HOLOGRAPHIC CORE WITH SYNTHETIC AUDIO & PASSIVE WAKE RADAR ---
+aris_legendary_reactor_html = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -248,7 +247,7 @@ aris_hologram_core_html = """
   #hologram-stage {
     position: relative;
     width: 100%;
-    height: 270px;
+    height: 280px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -322,23 +321,28 @@ aris_hologram_core_html = """
     50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(0, 229, 255, 1)); }
   }
 
-  #voice-btn {
+  .control-hud {
     position: absolute;
-    bottom: 4px;
+    bottom: 2px;
+    display: flex;
+    gap: 12px;
+  }
+
+  .hud-btn {
     background: rgba(9, 24, 44, 0.85);
     border: 1px solid #00e5ff;
     color: #00e5ff;
     font-family: 'Orbitron', sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 7px 22px;
-    border-radius: 24px;
+    padding: 6px 18px;
+    border-radius: 20px;
     cursor: pointer;
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
     transition: all 0.25s ease;
     letter-spacing: 1.5px;
   }
-  #voice-btn:hover { background: #00e5ff; color: #030712; box-shadow: 0 0 25px #00e5ff; }
+  .hud-btn:hover { background: #00e5ff; color: #030712; box-shadow: 0 0 25px #00e5ff; }
 </style>
 </head>
 <body>
@@ -372,27 +376,58 @@ aris_hologram_core_html = """
     <div class="brand-text">ARIS INDUSTRIES</div>
   </div>
 
-  <button id="voice-btn" onclick="toggleVoiceTransmission()">🎙️ TRANSMIT AUDIO [HOLD TO TALK]</button>
+  <div class="control-hud">
+    <button class="hud-btn" id="voice-btn" onclick="toggleVoiceTransmission()">🎙️ TRANSMIT AUDIO</button>
+    <button class="hud-btn" id="radar-btn" onclick="togglePassiveRadar()">📡 RADAR WAKE: OFF</button>
+  </div>
 </div>
 
 <script>
+  // 1. WEB AUDIO SYNTHESIZER SFX ENGINE (NO EXTERNAL MP3 NEEDED)
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playArcSfx(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'chirp') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1600, audioCtx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    } else if (type === 'powerup') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(110, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.35);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.35);
+    }
+  }
+
+  // 2. 3D INTERACTIVE TILT
   const stage = document.getElementById('hologram-stage');
   const logo = document.getElementById('logoBox');
-
   stage.addEventListener('mousemove', (e) => {
     const rect = stage.getBoundingClientRect();
     const x = e.clientX - rect.left - rect.width / 2;
     const y = e.clientY - rect.top - rect.height / 2;
     logo.style.transform = `perspective(600px) rotateY(${x * 0.12}deg) rotateX(${-y * 0.12}deg)`;
   });
-
   stage.addEventListener('mouseleave', () => {
     logo.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
   });
 
+  // 3. VOICE DIRECT TRANSMISSION
   let recognition;
   function toggleVoiceTransmission() {
-    const btn = document.getElementById('voice-btn');
+    playArcSfx('chirp');
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert("Browser speech recognition not supported.");
       return;
@@ -402,6 +437,7 @@ aris_hologram_core_html = """
     recognition.lang = 'en-IN';
     recognition.start();
 
+    const btn = document.getElementById('voice-btn');
     btn.innerText = "🔴 LISTENING...";
     btn.style.borderColor = "#ff0055";
     btn.style.color = "#ff0055";
@@ -409,6 +445,7 @@ aris_hologram_core_html = """
     recognition.onresult = function(e) {
       const transcript = e.results[0][0].transcript;
       btn.innerText = "⚡ TRANSMITTING...";
+      playArcSfx('powerup');
       const input = window.parent.document.querySelector('textarea[data-testid="stChatInputTextArea"]');
       if (input) {
         input.value = transcript;
@@ -418,17 +455,58 @@ aris_hologram_core_html = """
       }
     };
     recognition.onend = function() {
-      btn.innerText = "🎙️ TRANSMIT AUDIO [HOLD TO TALK]";
+      btn.innerText = "🎙️ TRANSMIT AUDIO";
       btn.style.borderColor = "#00e5ff";
       btn.style.color = "#00e5ff";
     };
+  }
+
+  // 4. PASSIVE HANDS-FREE VOCAL WAKE RADAR ("Hey ARIS" / "ARIS")
+  let passiveRadarActive = false;
+  let radarRec;
+  function togglePassiveRadar() {
+    playArcSfx('chirp');
+    const rBtn = document.getElementById('radar-btn');
+    if (!passiveRadarActive) {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      radarRec = new SpeechRec();
+      radarRec.continuous = true;
+      radarRec.interimResults = false;
+      radarRec.lang = 'en-IN';
+
+      radarRec.onresult = function(e) {
+        const last = e.results.length - 1;
+        const heard = e.results[last][0].transcript.toLowerCase();
+        if (heard.includes('aris') || heard.includes('hey aris') || heard.includes('boss')) {
+          playArcSfx('powerup');
+          toggleVoiceTransmission();
+        }
+      };
+
+      radarRec.onend = function() {
+        if (passiveRadarActive) radarRec.start();
+      };
+
+      radarRec.start();
+      passiveRadarActive = true;
+      rBtn.innerText = "📡 RADAR: LISTENING";
+      rBtn.style.borderColor = "#38bdf8";
+      rBtn.style.color = "#38bdf8";
+    } else {
+      passiveRadarActive = false;
+      if (radarRec) radarRec.stop();
+      rBtn.innerText = "📡 RADAR WAKE: OFF";
+      rBtn.style.borderColor = "#00e5ff";
+      rBtn.style.color = "#00e5ff";
+    }
   }
 </script>
 </body>
 </html>
 """
 
-# --- NATURAL HUMAN TTS ENGINE ---
+# --- NATURAL HUMAN TTS VOICE ENGINE ---
 def aris_speak(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
@@ -485,8 +563,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# 3D Glowing ARIS Hologram
-components.html(aris_hologram_core_html, height=275)
+# 3D Glowing ARIS Hologram with Controls
+components.html(aris_legendary_reactor_html, height=285)
 
 # STARK-TIER TELEMETRY HUD
 c1, c2, c3, c4 = st.columns(4)
@@ -499,6 +577,13 @@ with c3:
     st.markdown('<div class="telemetry-card">COGNITIVE STREAM<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
 with c4:
     st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
+
+# --- MULTI-MODAL VISION MATRIX DRAWER (EXPANDABLE) ---
+with st.expander("👁️ MULTI-MODAL VISION MATRIX [TACTICAL SCANNER]"):
+    st.markdown("<span style='color:#38bdf8; font-size:13px;'>Capture environmental feed or snapshot for visual neural diagnostic:</span>", unsafe_allow_html=True)
+    camera_feed = st.camera_input("Optical Matrix Link")
+    if camera_feed:
+        st.success("Tactical frame locked. Ready for multi-modal analysis.")
 
 st.write("")
 
@@ -572,7 +657,6 @@ ABSOLUTE TRUTHS (NEVER VIOLATE OR FABRICATE):
 for msg in st.session_state.chat_history:
     curr_avatar = aris_avatar if msg["role"] == "assistant" else user_avatar
     with st.chat_message(msg["role"], avatar=curr_avatar):
-        # Filter out internal voice briefs from UI display
         clean_display = re.sub(r'\[VOICE:\s*(.*?)\]', '', msg["content"]).strip()
         st.markdown(clean_display)
 
@@ -582,7 +666,6 @@ user_input = st.chat_input("Command ARIS...")
 if user_input:
     q_norm = user_input.lower().strip()
     
-    # Robust Pre-Check Authentication Regex
     boss_patterns = [
         r"\b(main|me)\s*(hu|hoo)\s*mayank\b",
         r"\bmayank\s*(hu|hoo|here)\b",
@@ -597,12 +680,10 @@ if user_input:
             st.session_state.is_boss_authenticated = True
             just_authenticated = True
 
-    # Render User Query
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user", avatar=user_avatar):
         st.markdown(user_input)
 
-    # Stream Tactical Response
     with st.chat_message("assistant", avatar=aris_avatar):
         box = st.empty()
         full_resp = ""
@@ -615,11 +696,9 @@ if user_input:
         box.markdown(final_clean)
         st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
         
-        # Audio Synthesis: Prefer explicit voice brief if provided, else fallback to standard clean text
         voice_match = re.search(r'\[VOICE:\s*(.*?)\]', full_resp)
         spoken_text = voice_match.group(1) if voice_match else final_clean
         aris_speak(spoken_text)
 
-    # Force Instant Interface Refresh on State Override
     if just_authenticated:
         st.rerun()
