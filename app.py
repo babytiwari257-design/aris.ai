@@ -7,16 +7,16 @@ import re
 from datetime import datetime
 from groq import Groq
 
-# --- SYSTEM CONTROLLER HARDWARE LINK ---
+# --- SYSTEM CONTROLLER HARDWARE LINK (SAFE IMPORT) ---
 try:
     from system_controller import execute_os_action, get_live_telemetry
     HARDWARE_ONLINE = True
-except ImportError:
+except Exception:
     HARDWARE_ONLINE = False
     def execute_os_action(action_tag, target=""):
-        return "Hardware link offline: system_controller.py missing."
+        return "Hardware link offline or system_controller unavailable."
     def get_live_telemetry():
-        return "Telemetry Offline"
+        return "Hardware Telemetry Offline"
 
 # --- MATRIX CONFIGURATION ---
 st.set_page_config(
@@ -184,7 +184,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- LONG TERM MEMORY VAULT ---
+# --- MEMORY VAULT ---
 MEMORY_FILE = "aris_longterm_vault.json"
 
 def load_longterm_memory():
@@ -545,6 +545,4 @@ st.markdown(f"""
     <h1 class="hud-title">ARIS // APEX COMMAND MATRIX</h1>
     <div class="hud-subtitle">{status_subtitle}</div>
 </div>
-""", unsafe_allow_html=True)
-
-components.
+""", unsafe_allow_html=True
