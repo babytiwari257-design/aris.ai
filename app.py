@@ -7,14 +7,14 @@ import re
 from datetime import datetime
 from groq import Groq
 
-# --- SYSTEM CONTROLLER HARDWARE LINK (LOCAL WINDOWS OS BRIDGE) ---
+# --- SYSTEM CONTROLLER HARDWARE LINK (SAFE FALLBACK) ---
 try:
     from system_controller import execute_os_action, get_live_telemetry
     HARDWARE_ONLINE = True
 except Exception:
     HARDWARE_ONLINE = False
     def execute_os_action(action_tag, target=""):
-        return "Hardware link standby (system_controller module missing)."
+        return "Hardware link standby (system_controller missing)."
     def get_live_telemetry():
         return "Telemetry Standby"
 
@@ -259,7 +259,6 @@ aris_legendary_reactor_html = """
     justify-content: center;
     align-items: center;
   }
-
   .energy-ring-outer {
     position: absolute;
     width: 250px;
@@ -269,7 +268,6 @@ aris_legendary_reactor_html = """
     box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
     animation: spinClockwise 22s linear infinite;
   }
-
   .energy-ring-inner {
     position: absolute;
     width: 215px;
@@ -282,7 +280,6 @@ aris_legendary_reactor_html = """
     box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
     animation: spinCounter 12s linear infinite;
   }
-
   .logo-core {
     position: relative;
     width: 175px;
@@ -299,14 +296,12 @@ aris_legendary_reactor_html = """
     transform-style: preserve-3d;
     transition: transform 0.1s ease-out;
   }
-
   .insignia-svg {
     width: 110px;
     height: 110px;
     filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.8));
     animation: circuitPulse 2.5s ease-in-out infinite;
   }
-
   .brand-text {
     font-family: 'Orbitron', sans-serif;
     font-size: 10px;
@@ -316,7 +311,6 @@ aris_legendary_reactor_html = """
     margin-top: 4px;
     text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
   }
-
   @keyframes spinClockwise { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @keyframes spinCounter { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
   @keyframes reactorPulse {
@@ -327,14 +321,12 @@ aris_legendary_reactor_html = """
     0%, 100% { opacity: 0.9; }
     50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(0, 229, 255, 1)); }
   }
-
   .control-hud {
     position: absolute;
     bottom: 2px;
     display: flex;
     gap: 12px;
   }
-
   .hud-btn {
     background: rgba(9, 24, 44, 0.85);
     border: 1px solid #00e5ff;
@@ -356,7 +348,6 @@ aris_legendary_reactor_html = """
 <div id="hologram-stage">
   <div class="energy-ring-outer"></div>
   <div class="energy-ring-inner"></div>
-  
   <div class="logo-core" id="logoBox">
     <svg class="insignia-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -382,15 +373,12 @@ aris_legendary_reactor_html = """
     </svg>
     <div class="brand-text">ARIS INDUSTRIES</div>
   </div>
-
   <div class="control-hud">
     <button class="hud-btn" id="voice-btn" onclick="toggleVoiceTransmission()">🎙️ TRANSMIT AUDIO</button>
     <button class="hud-btn" id="radar-btn" onclick="togglePassiveRadar()">📡 RADAR WAKE: OFF</button>
   </div>
 </div>
-
 <script>
-  // 1. SYNTHETIC AUDIO SFX (WEB AUDIO API)
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playArcSfx(type) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -398,7 +386,6 @@ aris_legendary_reactor_html = """
     const gain = audioCtx.createGain();
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-
     if (type === 'chirp') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(800, audioCtx.currentTime);
@@ -418,7 +405,6 @@ aris_legendary_reactor_html = """
     }
   }
 
-  // 2. 3D INTERACTIVE TILT
   const stage = document.getElementById('hologram-stage');
   const logo = document.getElementById('logoBox');
   stage.addEventListener('mousemove', (e) => {
@@ -431,14 +417,10 @@ aris_legendary_reactor_html = """
     logo.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
   });
 
-  // 3. VOICE DIRECT TRANSMISSION
   let recognition;
   function toggleVoiceTransmission() {
     playArcSfx('chirp');
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("Browser speech recognition not supported.");
-      return;
-    }
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRec();
     recognition.lang = 'en-IN';
@@ -468,7 +450,6 @@ aris_legendary_reactor_html = """
     };
   }
 
-  // 4. PASSIVE HANDS-FREE VOCAL WAKE RADAR ("Hey ARIS" / "ARIS")
   let passiveRadarActive = false;
   let radarRec;
   function togglePassiveRadar() {
@@ -518,41 +499,51 @@ def trigger_audio_brief(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
     
-    js_template = """
+    js = f"""
     <script>
-      function speakVoice() {
+      function speakVoice() {{
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
-        var utter = new SpeechSynthesisUtterance('__TEXT__');
+        var utter = new SpeechSynthesisUtterance('{clean}');
         var voices = window.speechSynthesis.getVoices();
-        var selected = voices.find(function(v) {
+        var selected = voices.find(function(v) {{
           return (v.name.includes("Natural") && (v.lang.includes("IN") || v.lang.includes("hi"))) ||
                  v.name.includes("Neerja") ||
                  v.name.includes("Prabhat") ||
                  v.name.includes("Google हिन्दी") ||
                  v.lang === "hi-IN";
-        });
-        if (!selected) {
-          selected = voices.find(function(v) {
+        }});
+        if (!selected) {{
+          selected = voices.find(function(v) {{
             return v.lang === "en-IN" || v.lang === "en-US" || v.name.includes("Natural");
-          });
-        }
+          }});
+        }}
         if (selected) utter.voice = selected;
         utter.pitch = 1.0;
         utter.rate = 1.05;
         window.speechSynthesis.speak(utter);
-      }
-      if (window.speechSynthesis.getVoices().length === 0) {
+      }}
+      if (window.speechSynthesis.getVoices().length === 0) {{
         window.speechSynthesis.onvoiceschanged = speakVoice;
-      } else {
+      }} else {{
         speakVoice();
-      }
+      }}
     </script>
     """
-    js = js_template.replace('__TEXT__', clean)
     components.html(js, height=0, width=0)
 
 # --- HEADER INTERFACE ---
-status_subtitle = "\"ARIS IS MY CO-PILOT\" // HARDWARE BRIDGE ARMED // MAYANK"
-st.markdown(f"""
-<div c
+status_subtitle = "ARIS IS MY CO-PILOT // HARDWARE BRIDGE ARMED // MAYANK"
+
+st.markdown(
+    '<div class="hud-title-box">'
+    '<h1 class="hud-title">ARIS // APEX COMMAND MATRIX</h1>'
+    f'<div class="hud-subtitle">{status_subtitle}</div>'
+    '</div>',
+    unsafe_allow_html=True
+)
+
+components.html(aris_legendary_reactor_html, height=285)
+
+# STARK-TIER TELEMETRY HUD
+active_display_core = live_active_models[0].split("/
