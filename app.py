@@ -7,6 +7,17 @@ import re
 from datetime import datetime
 from groq import Groq
 
+# --- SYSTEM CONTROLLER HARDWARE LINK ---
+try:
+    from system_controller import execute_os_action, get_live_telemetry
+    HARDWARE_ONLINE = True
+except ImportError:
+    HARDWARE_ONLINE = False
+    def execute_os_action(action_tag, target=""):
+        return "Hardware link offline: system_controller.py missing."
+    def get_live_telemetry():
+        return "Telemetry Offline"
+
 # --- MATRIX CONFIGURATION ---
 st.set_page_config(
     page_title="ARIS // APEX COMMAND MATRIX",
@@ -189,13 +200,6 @@ def load_longterm_memory():
             return defaults
     return defaults
 
-def save_longterm_memory(memories):
-    try:
-        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(memories, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
-
 # --- SESSION STATES ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -203,8 +207,6 @@ if "memory_vault" not in st.session_state:
     st.session_state.memory_vault = load_longterm_memory()
 if "is_boss_authenticated" not in st.session_state:
     st.session_state.is_boss_authenticated = False
-if "last_active_agent" not in st.session_state:
-    st.session_state.last_active_agent = "OMNISCIENT CORE // ARMED"
 
 # --- GROQ CLIENT RETRIEVER ---
 def get_groq_client():
@@ -213,7 +215,6 @@ def get_groq_client():
         return None
     return Groq(api_key=api_key.strip())
 
-# --- DYNAMIC ACTIVE MODEL DISCOVERY (FAIL-PROOF) ---
 @st.cache_data(ttl=600)
 def get_live_groq_models():
     client = get_groq_client()
@@ -221,7 +222,6 @@ def get_live_groq_models():
         return ["llama-3.1-8b-instant"]
     try:
         models_data = client.models.list()
-        # Sirf text-chat models filter karo jo active hain
         usable = []
         for m in models_data.data:
             m_id = m.id.lower()
@@ -229,7 +229,6 @@ def get_live_groq_models():
                 continue
             usable.append(m.id)
         
-        # Priority sort: Sabse heavy aur best models pehle
         priority_keywords = ["120b", "70b", "27b", "20b", "8b"]
         sorted_models = []
         for kw in priority_keywords:
@@ -245,7 +244,7 @@ def get_live_groq_models():
 
 live_active_models = get_live_groq_models()
 
-# --- HOLOGRAPHIC CORE & PASSIVE RADAR ---
+# --- HOLOGRAPHIC CORE & RADAR ---
 aris_legendary_reactor_html = """
 <!DOCTYPE html>
 <html>
@@ -260,7 +259,6 @@ aris_legendary_reactor_html = """
     justify-content: center;
     align-items: center;
   }
-
   .energy-ring-outer {
     position: absolute;
     width: 250px;
@@ -270,7 +268,6 @@ aris_legendary_reactor_html = """
     box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
     animation: spinClockwise 22s linear infinite;
   }
-
   .energy-ring-inner {
     position: absolute;
     width: 215px;
@@ -283,7 +280,6 @@ aris_legendary_reactor_html = """
     box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
     animation: spinCounter 12s linear infinite;
   }
-
   .logo-core {
     position: relative;
     width: 175px;
@@ -300,14 +296,12 @@ aris_legendary_reactor_html = """
     transform-style: preserve-3d;
     transition: transform 0.1s ease-out;
   }
-
   .insignia-svg {
     width: 110px;
     height: 110px;
     filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.8));
     animation: circuitPulse 2.5s ease-in-out infinite;
   }
-
   .brand-text {
     font-family: 'Orbitron', sans-serif;
     font-size: 10px;
@@ -317,7 +311,6 @@ aris_legendary_reactor_html = """
     margin-top: 4px;
     text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
   }
-
   @keyframes spinClockwise { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @keyframes spinCounter { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
   @keyframes reactorPulse {
@@ -328,14 +321,12 @@ aris_legendary_reactor_html = """
     0%, 100% { opacity: 0.9; }
     50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(0, 229, 255, 1)); }
   }
-
   .control-hud {
     position: absolute;
     bottom: 2px;
     display: flex;
     gap: 12px;
   }
-
   .hud-btn {
     background: rgba(9, 24, 44, 0.85);
     border: 1px solid #00e5ff;
@@ -357,7 +348,6 @@ aris_legendary_reactor_html = """
 <div id="hologram-stage">
   <div class="energy-ring-outer"></div>
   <div class="energy-ring-inner"></div>
-  
   <div class="logo-core" id="logoBox">
     <svg class="insignia-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -383,13 +373,11 @@ aris_legendary_reactor_html = """
     </svg>
     <div class="brand-text">ARIS INDUSTRIES</div>
   </div>
-
   <div class="control-hud">
     <button class="hud-btn" id="voice-btn" onclick="toggleVoiceTransmission()">🎙️ TRANSMIT AUDIO</button>
     <button class="hud-btn" id="radar-btn" onclick="togglePassiveRadar()">📡 RADAR WAKE: OFF</button>
   </div>
 </div>
-
 <script>
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playArcSfx(type) {
@@ -398,7 +386,6 @@ aris_legendary_reactor_html = """
     const gain = audioCtx.createGain();
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-
     if (type === 'chirp') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(800, audioCtx.currentTime);
@@ -433,10 +420,7 @@ aris_legendary_reactor_html = """
   let recognition;
   function toggleVoiceTransmission() {
     playArcSfx('chirp');
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("Browser speech recognition not supported.");
-      return;
-    }
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRec();
     recognition.lang = 'en-IN';
@@ -510,7 +494,7 @@ aris_legendary_reactor_html = """
 </html>
 """
 
-# --- ON-DEMAND GEMINI-STYLE TTS ENGINE ---
+# --- ON-DEMAND GEMINI AUDIO BRIEF ENGINE ---
 def trigger_audio_brief(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
@@ -522,7 +506,6 @@ def trigger_audio_brief(text):
         window.speechSynthesis.cancel();
         var utter = new SpeechSynthesisUtterance('__TEXT__');
         var voices = window.speechSynthesis.getVoices();
-        
         var selected = voices.find(function(v) {
           return (v.name.includes("Natural") && (v.lang.includes("IN") || v.lang.includes("hi"))) ||
                  v.name.includes("Neerja") ||
@@ -530,19 +513,16 @@ def trigger_audio_brief(text):
                  v.name.includes("Google हिन्दी") ||
                  v.lang === "hi-IN";
         });
-        
         if (!selected) {
           selected = voices.find(function(v) {
             return v.lang === "en-IN" || v.lang === "en-US" || v.name.includes("Natural");
           });
         }
-        
         if (selected) utter.voice = selected;
         utter.pitch = 1.0;
         utter.rate = 1.05;
         window.speechSynthesis.speak(utter);
       }
-
       if (window.speechSynthesis.getVoices().length === 0) {
         window.speechSynthesis.onvoiceschanged = speakVoice;
       } else {
@@ -555,7 +535,7 @@ def trigger_audio_brief(text):
 
 # --- HEADER INTERFACE ---
 status_subtitle = (
-    "\"ARIS IS MY CO-PILOT\" // APEX REASONING ENGAGED // MAYANK" 
+    "\"ARIS IS MY CO-PILOT\" // HARDWARE BRIDGE ARMED // MAYANK" 
     if st.session_state.is_boss_authenticated 
     else "STANDBY // GUEST VERIFICATION MATRIX ACTIVE"
 )
@@ -567,148 +547,4 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-components.html(aris_legendary_reactor_html, height=285)
-
-# STARK-TIER TELEMETRY HUD
-active_display_core = live_active_models[0].split("/")[-1].upper() if live_active_models else "ONLINE"
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    stat_val = "COMMANDER ACTIVE" if st.session_state.is_boss_authenticated else "GUEST RESTRICTED"
-    st.markdown(f'<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">{stat_val}</div></div>', unsafe_allow_html=True)
-with c2:
-    st.markdown(f'<div class="telemetry-card">LIVE HARDWARE CORE<div class="telemetry-val">{active_display_core}</div></div>', unsafe_allow_html=True)
-with c3:
-    st.markdown('<div class="telemetry-card">INTEL VECTOR<div class="telemetry-val">FIRST-PRINCIPLES // ADVANCED</div></div>', unsafe_allow_html=True)
-with c4:
-    st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
-
-st.write("")
-
-# --- INFERENCE ENGINE WITH DYNAMIC LIVE FALLBACK ---
-def run_aris_core(query):
-    client = get_groq_client()
-    if not client:
-        yield "API key not configured in environment."
-        return
-
-    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
-    timestamp_now = datetime.now().strftime("%A, %d %B %Y, %I:%M %p")
-
-    if st.session_state.is_boss_authenticated:
-        system_prompt = f"""
-You are ARIS, the apex tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), founder of ARIS Industries.
-TEMPORAL ANCHOR: Current timestamp is {timestamp_now}.
-
-COGNITIVE ARCHITECTURE & REASONING PROTOCOLS:
-1. APEX DOUBT SOLVER PROTOCOL:
-   - You are vastly superior to generic textbook chatbots.
-   - For complex problems (Irodov, Krotov, Advanced Physics/Maths/Chemistry):
-     * Do NOT give rushed or vague answers.
-     * Break down the problem using **First-Principles Thinking**:
-       1. Identify fundamental physical/mathematical laws.
-       2. Establish coordinates and constraints clearly.
-       3. Provide step-by-step mathematical derivations.
-       4. State final answers clearly with numerical values and units.
-2. ALL-ROUND INTEL & CURRENT AFFAIRS:
-   - Provide high-intellect, sharp analysis on geopolitics, cutting-edge science, space, and tech.
-3. CONVERSATIONAL CADENCE:
-   - Mayank is Boss. Treat him with authentic respect, sharpness, and confidence.
-   - Default to clean, authoritative English; naturally blend into Roman Hinglish if Boss prompts in Hinglish.
-
-DUAL-STREAM PROTOCOL:
-At the very end of your response, provide a 1-sentence vocal brief enclosed in [VOICE: <brief>].
-"""
-    else:
-        system_prompt = f"""
-You are ARIS, the tactical AI matrix developed by ARIS Industries.
-TEMPORAL ANCHOR: {timestamp_now}.
-CURRENT SESSION: Guest / Unverified User.
-
-ABSOLUTE TRUTHS:
-1. ARIS Industries was created and founded by Commander Mayank.
-2. Commander Mayank is your sole architect and boss.
-3. Solve queries with exceptional logic, accuracy, and concise clarity.
-"""
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for msg in st.session_state.chat_history[-4:]:
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": query})
-
-    stream_success = False
-    last_err = ""
-
-    # DYNAMIC AUTO-FALLBACK LOOP: Only test models verified LIVE on Groq API
-    for candidate_model in live_active_models:
-        try:
-            completion = client.chat.completions.create(
-                model=candidate_model,
-                messages=messages,
-                temperature=0.3,
-                max_tokens=2048,
-                stream=True
-            )
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    yield content
-            stream_success = True
-            break
-        except Exception as e:
-            last_err = str(e)
-            continue
-
-    if not stream_success:
-        yield f"Neural link failed across all live cores: {last_err}"
-
-# --- TIMELINE RENDER (WITH GEMINI-STYLE VOICE BUTTON) ---
-for idx, msg in enumerate(st.session_state.chat_history):
-    curr_avatar = aris_avatar if msg["role"] == "assistant" else user_avatar
-    with st.chat_message(msg["role"], avatar=curr_avatar):
-        clean_display = re.sub(r'\[VOICE:\s*(.*?)\]', '', msg["content"]).strip()
-        st.markdown(clean_display)
-        
-        if msg["role"] == "assistant":
-            voice_match = re.search(r'\[VOICE:\s*(.*?)\]', msg["content"])
-            vocal_summary = voice_match.group(1) if voice_match else clean_display[:180]
-            if st.button("🔊 LISTEN BRIEF", key=f"voice_btn_{idx}"):
-                trigger_audio_brief(vocal_summary)
-
-# --- USER COMMAND DISPATCH ---
-user_input = st.chat_input("Command ARIS Matrix...")
-
-if user_input:
-    q_norm = user_input.lower().strip()
-    
-    boss_patterns = [
-        r"\b(main|me)\s*(hu|hoo)\s*mayank\b",
-        r"\bmayank\s*(hu|hoo|here)\b",
-        r"\bboss\s*(here|hu|hoo|agya|aagaya|is\s*here)\b",
-        r"\bcommander\s*mayank\b",
-        r"\bi\s*am\s*mayank\b"
-    ]
-    
-    just_authenticated = False
-    if not st.session_state.is_boss_authenticated:
-        if any(re.search(pat, q_norm) for pat in boss_patterns):
-            st.session_state.is_boss_authenticated = True
-            just_authenticated = True
-
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.chat_message("user", avatar=user_avatar):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant", avatar=aris_avatar):
-        box = st.empty()
-        full_resp = ""
-        for chunk in run_aris_core(user_input):
-            full_resp += chunk
-            clean_stream = re.sub(r'\[VOICE:\s*(.*?)\]', '', full_resp)
-            box.markdown(clean_stream + " ▌")
-        
-        final_clean = re.sub(r'\[VOICE:\s*(.*?)\]', '', full_resp).strip()
-        box.markdown(final_clean)
-        st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
-
-    if just_authenticated:
-        st.rerun()
+components.
