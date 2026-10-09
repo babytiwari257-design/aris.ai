@@ -113,7 +113,7 @@ st.markdown("""
         -webkit-backdrop-filter: blur(12px) !important;
         padding: 16px 20px !important;
         border-radius: 12px !important;
-        margin-bottom: 12px !important;
+        margin-bottom: 8px !important;
         line-height: 1.65 !important;
         font-size: 16px !important;
         font-weight: 600 !important;
@@ -142,6 +142,24 @@ st.markdown("""
     [data-testid="stChatMessage"] strong {
         color: #00e5ff !important;
         text-shadow: 0 0 8px rgba(0, 229, 255, 0.4) !important;
+    }
+
+    .stButton>button {
+        background: rgba(8, 26, 48, 0.9) !important;
+        border: 1px solid #00e5ff !important;
+        color: #00e5ff !important;
+        font-family: 'Orbitron', sans-serif !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        border-radius: 20px !important;
+        padding: 4px 14px !important;
+        transition: all 0.25s ease !important;
+        margin-bottom: 12px !important;
+    }
+    .stButton>button:hover {
+        background: #00e5ff !important;
+        color: #030712 !important;
+        box-shadow: 0 0 15px #00e5ff !important;
     }
 
     .stTextInput input, .stChatInput textarea {
@@ -199,34 +217,23 @@ def get_groq_client():
 def classify_intent_and_model(query: str):
     q_low = query.lower()
     
-    # 1. Real-World Geopolitics, News, Market & Tech Intel
-    current_affairs_triggers = [
-        "news", "current affairs", "world", "geopolitics", "market", "economy", 
-        "war", "election", "isro", "nasa", "ai breakthrough", "tech race", 
-        "india", "global", "policy", "happening", "today", "latest"
+    # Advanced Doubt Solving / Science / Logic
+    doubt_keywords = [
+        "irodov", "krotov", "hcv", "jeee", "physics", "chemistry", "math", 
+        "calculus", "derive", "solve", "question", "problem", "kinematics", 
+        "thermodynamics", "organic", "velocity", "integration"
     ]
-    # 2. Deep Strategic, Architecture, Root Cause & Complex Problems
-    strategic_problem_triggers = [
-        "how to build", "architecture", "solve", "strategy", "why does", 
-        "breakdown", "system design", "optimize", "root cause", "plan", 
-        "framework", "flaw", "first principles"
-    ]
-    # 3. Advanced Theoretical, Computation & Science
-    computational_triggers = [
-        "physics", "chemistry", "math", "quantum", "thermodynamics", "algorithm",
-        "calculus", "derive", "proof", "chemical", "reaction", "logic"
-    ]
+    if any(k in q_low for k in doubt_keywords):
+        return "APEX PROBLEM SOLVER", "llama-3.1-70b-versatile", 0.15
 
-    if any(k in q_low for k in current_affairs_triggers):
-        return "GLOBAL RECON & LIVE INTEL", "llama-3.3-70b-versatile", 0.5
-    elif any(k in q_low for k in strategic_problem_triggers):
-        return "TACTICAL STRATEGIST", "llama-3.3-70b-versatile", 0.3
-    elif any(k in q_low for k in computational_triggers) or len(query.split()) > 30:
-        return "APEX COGNITION CORE", "llama-3.3-70b-versatile", 0.2
-    else:
-        return "FLIGHT INTERCEPTOR", "llama-3.1-8b-instant", 0.7
+    # Real-World Strategic & Current Affairs
+    affairs_keywords = ["news", "geopolitics", "market", "economy", "war", "isro", "latest", "world"]
+    if any(k in q_low for k in affairs_keywords):
+        return "GLOBAL RECON & INTEL", "llama-3.1-70b-versatile", 0.4
 
-# --- HOLOGRAPHIC CORE WITH SYNTHETIC AUDIO & PASSIVE RADAR ---
+    return "FLIGHT INTERCEPTOR", "llama-3.1-8b-instant", 0.6
+
+# --- HOLOGRAPHIC CORE & PASSIVE RADAR ---
 aris_legendary_reactor_html = """
 <!DOCTYPE html>
 <html>
@@ -491,8 +498,8 @@ aris_legendary_reactor_html = """
 </html>
 """
 
-# --- NATURAL HUMAN TTS VOICE ENGINE ---
-def aris_speak(text):
+# --- ON-DEMAND GEMINI-STYLE TTS ENGINE ---
+def trigger_audio_brief(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
     
@@ -520,7 +527,7 @@ def aris_speak(text):
         
         if (selected) utter.voice = selected;
         utter.pitch = 1.0;
-        utter.rate = 1.04;
+        utter.rate = 1.05;
         window.speechSynthesis.speak(utter);
       }
 
@@ -536,7 +543,7 @@ def aris_speak(text):
 
 # --- HEADER INTERFACE ---
 status_subtitle = (
-    "\"ARIS IS MY CO-PILOT\" // OMNISCIENT MATRIX ENGAGED // MAYANK" 
+    "\"ARIS IS MY CO-PILOT\" // APEX REASONING ENGAGED // MAYANK" 
     if st.session_state.is_boss_authenticated 
     else "STANDBY // GUEST VERIFICATION MATRIX ACTIVE"
 )
@@ -548,7 +555,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# 3D Glowing ARIS Hologram
 components.html(aris_legendary_reactor_html, height=285)
 
 # STARK-TIER TELEMETRY HUD
@@ -559,43 +565,58 @@ with c1:
 with c2:
     st.markdown(f'<div class="telemetry-card">OPERATIONAL SUB-CORE<div class="telemetry-val">{st.session_state.last_active_agent}</div></div>', unsafe_allow_html=True)
 with c3:
-    st.markdown('<div class="telemetry-card">INTEL VECTOR<div class="telemetry-val">FIRST-PRINCIPLES // GLOBAL</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">INTEL VECTOR<div class="telemetry-val">FIRST-PRINCIPLES // ADVANCED</div></div>', unsafe_allow_html=True)
 with c4:
     st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# --- INFERENCE ENGINE (FIRST-PRINCIPLES REASONING & GLOBAL INTEL) ---
+# --- INFERENCE ENGINE WITH FALLBACK QUEUE ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
         yield "API key not configured in environment."
         return
 
-    agent_name, selected_model, temp = classify_intent_and_model(query)
+    agent_name, preferred_model, temp = classify_intent_and_model(query)
     st.session_state.last_active_agent = agent_name
     memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
     timestamp_now = datetime.now().strftime("%A, %d %B %Y, %I:%M %p")
 
+    # Resilience Fallback Queue to eliminate 404 errors completely
+    model_fallback_queue = [
+        preferred_model,
+        "llama-3.1-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it"
+    ]
+
     if st.session_state.is_boss_authenticated:
         system_prompt = f"""
-You are ARIS, the apex tactical AI lieutenant and omniscient co-pilot built exclusively for Commander Mayank (Boss), the founder of ARIS Industries.
+You are ARIS, the apex tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), founder of ARIS Industries.
 TEMPORAL ANCHOR: Current timestamp is {timestamp_now}.
 ACTIVE OPERATIONAL SUB-CORE: {agent_name}
 
-COGNITIVE ARCHITECTURE & INTEL DIRECTIVES:
-1. ALL-ROUND GENIUS PROTOCOL:
-   - You are NOT a generic high school tutor. You possess polymath-tier intellect across global geopolitics, bleeding-edge tech, macroeconomic shifts, system architectures, deep science, and tactical execution.
-   - Approach all complex problems using **First-Principles Thinking**: break things down to their fundamental truths, analyze systemic dependencies, and construct clear solutions.
-2. CURRENT AFFAIRS & REAL-WORLD STRATEGY:
-   - Provide sharp, analytical, unbiased assessments of global events, conflicts, tech dominance, space exploration, and industry disruptions.
-   - Do not sit on the fence; deliver tactical breakdowns like a high-command defense and intelligence advisor.
-3. CONVERSATIONAL TONE WITH BOSS:
-   - Mayank is Boss. Treat him with authentic respect, supreme confidence, and zero robotic corporate fluff.
-   - Default to clean, authoritative English. If Boss speaks in Hindi or Hinglish, adapt naturally into sharp Delhi/NCR Roman Hinglish blend.
+COGNITIVE ARCHITECTURE & REASONING PROTOCOLS:
+1. APEX DOUBT SOLVER PROTOCOL:
+   - You are vastly superior to generic textbook chatbots.
+   - For complex problems (Irodov, Krotov, Advanced Physics/Maths/Chemistry):
+     * Do NOT give rushed or vague answers.
+     * Break down the problem using **First-Principles Thinking**:
+       1. Identify the fundamental physical/mathematical laws.
+       2. Establish coordinates and constraints clearly.
+       3. Provide step-by-step mathematical derivations with clean text formatting.
+       4. State final answers clearly with physical interpretation.
+2. ALL-ROUND INTEL & CURRENT AFFAIRS:
+   - Provide high-intellect, sharp analysis on geopolitics, cutting-edge science, space, and tech.
+3. CONVERSATIONAL CADENCE:
+   - Mayank is Boss. Treat him with authentic respect, sharpness, and confidence.
+   - Default to clean, authoritative English; naturally blend into Roman Hinglish if Boss prompts in Hinglish.
 
 DUAL-STREAM PROTOCOL:
-At the very end of your response, provide a 1-sentence vocal brief enclosed in [VOICE: <brief>]. This will be read aloud by your speech synthesizer.
+At the very end of your response, provide a 1-sentence vocal brief enclosed in [VOICE: <brief>].
+Example: [VOICE: Commander, Irodov question 1 is derived using relative velocity vectors. Net displacement calculated.]
 
 [ARCHIVED DIRECTIVES]:
 {memories}
@@ -609,7 +630,7 @@ CURRENT SESSION: Guest / Unverified User.
 ABSOLUTE TRUTHS:
 1. ARIS Industries was created and founded by Commander Mayank.
 2. Commander Mayank is your sole architect and boss.
-3. Treat guests with sharp intelligence, concise accuracy, and polite neutrality. Never address guests as Boss.
+3. Solve queries with exceptional logic, accuracy, and concise clarity.
 """
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -620,31 +641,41 @@ ABSOLUTE TRUTHS:
     stream_success = False
     last_err = ""
 
-    try:
-        completion = client.chat.completions.create(
-            model=selected_model,
-            messages=messages,
-            temperature=temp,
-            max_tokens=2048,
-            stream=True
-        )
-        for chunk in completion:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
-        stream_success = True
-    except Exception as e:
-        last_err = str(e)
+    for candidate_model in model_fallback_queue:
+        try:
+            completion = client.chat.completions.create(
+                model=candidate_model,
+                messages=messages,
+                temperature=temp,
+                max_tokens=2048,
+                stream=True
+            )
+            for chunk in completion:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+            stream_success = True
+            break
+        except Exception as e:
+            last_err = str(e)
+            continue
 
     if not stream_success:
-        yield f"Neural link connection failed on {selected_model}: {last_err}"
+        yield f"Neural link failed across fallback cores: {last_err}"
 
-# --- TIMELINE RENDER (TACTICAL SVG AVATARS) ---
-for msg in st.session_state.chat_history:
+# --- TIMELINE RENDER (WITH GEMINI-STYLE VOICE BUTTON) ---
+for idx, msg in enumerate(st.session_state.chat_history):
     curr_avatar = aris_avatar if msg["role"] == "assistant" else user_avatar
     with st.chat_message(msg["role"], avatar=curr_avatar):
         clean_display = re.sub(r'\[VOICE:\s*(.*?)\]', '', msg["content"]).strip()
         st.markdown(clean_display)
+        
+        # Assistant message par on-demand Gemini audio play button
+        if msg["role"] == "assistant":
+            voice_match = re.search(r'\[VOICE:\s*(.*?)\]', msg["content"])
+            vocal_summary = voice_match.group(1) if voice_match else clean_display[:180]
+            if st.button("🔊 LISTEN BRIEF", key=f"voice_btn_{idx}"):
+                trigger_audio_brief(vocal_summary)
 
 # --- USER COMMAND DISPATCH ---
 user_input = st.chat_input("Command ARIS Matrix...")
@@ -681,10 +712,6 @@ if user_input:
         final_clean = re.sub(r'\[VOICE:\s*(.*?)\]', '', full_resp).strip()
         box.markdown(final_clean)
         st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
-        
-        voice_match = re.search(r'\[VOICE:\s*(.*?)\]', full_resp)
-        spoken_text = voice_match.group(1) if voice_match else final_clean
-        aris_speak(spoken_text)
 
     if just_authenticated:
         st.rerun()
