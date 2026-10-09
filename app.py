@@ -28,6 +28,7 @@ ARIS_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <circle cx="50" cy="50" r="44" fill="#040e1c" stroke="#00e5ff" stroke-width="5"/>
   <circle cx="50" cy="50" r="28" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-dasharray="10,5"/>
   <polygon points="50,28 68,64 32,64" fill="#00e5ff"/>
+  <circle cx="50" cy="6" r="3" fill="#ffffff"/>
   <circle cx="50" cy="50" r="6" fill="#ffffff"/>
 </svg>"""
 
@@ -183,7 +184,7 @@ def save_longterm_memory(memories):
     except Exception:
         pass
 
-# --- SESSION INITIALIZATIONS ---
+# --- SESSION STATES ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "memory_vault" not in st.session_state:
@@ -201,41 +202,41 @@ def get_groq_client():
 @st.cache_data(ttl=900)
 def discover_usable_models():
     client = get_groq_client()
-    priority_order = [
-        "openai/gpt-oss-120b",
-        "openai/gpt-oss-20b",
-        "qwen/qwen3.8-27b",
+    default_catalog = [
+        "llama-3.1-8b-instant",
         "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant"
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b"
     ]
     if not client:
-        return priority_order
+        return default_catalog
 
     try:
         live_catalog = client.models.list()
         all_ids = [m.id for m in live_catalog.data if getattr(m, 'active', True)]
-
         clean_models = [
             m_id for m_id in all_ids
             if not any(blocked in m_id.lower() for blocked in [
                 "whisper", "guard", "orpheus", "prompt-guard", "safeguard", "compound"
             ])
         ]
-
-        sorted_models = []
-        for pref in priority_order:
-            if pref in clean_models:
-                sorted_models.append(pref)
-        for m_id in clean_models:
-            if m_id not in sorted_models:
-                sorted_models.append(m_id)
-
-        return sorted_models if sorted_models else priority_order
+        return clean_models if clean_models else default_catalog
     except Exception:
-        return priority_order
+        return default_catalog
 
-active_models_list = discover_usable_models()
-primary_model_name = active_models_list[0] if active_models_list else "openai/gpt-oss-120b"
+discovered_models = discover_usable_models()
+
+# Dynamic Model Selector Based on Query Complexity
+def select_dynamic_model(query: str) -> str:
+    heavy_triggers = ["code", "script", "analyze", "debug", "architecture", "plan", "complex", "write a"]
+    if any(k in query.lower() for k in heavy_triggers) or len(query.split()) > 20:
+        for flagship in ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"]:
+            if flagship in discovered_models:
+                return flagship
+    for fast in ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]:
+        if fast in discovered_models:
+            return fast
+    return discovered_models[0] if discovered_models else "llama-3.1-8b-instant"
 
 # --- 3D GLOWING ARIS VECTOR REACTOR ---
 aris_hologram_core_html = """
@@ -427,7 +428,7 @@ aris_hologram_core_html = """
 </html>
 """
 
-# --- NATURAL HUMAN TTS VOICE ENGINE ---
+# --- NATURAL HUMAN TTS ENGINE ---
 def aris_speak(text):
     clean = str(text).replace('*', '').replace('#', '').replace('`', '').replace('"', '').replace("'", "")
     clean = clean.replace('\n', ' ')[:220]
@@ -493,7 +494,7 @@ with c1:
     stat_val = "COMMANDER ACTIVE" if st.session_state.is_boss_authenticated else "GUEST RESTRICTED"
     st.markdown(f'<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">{stat_val}</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown(f'<div class="telemetry-card">TACTICAL LOGIC<div class="telemetry-val">{primary_model_name.split("/")[-1].upper()} // SYNC</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">ACTIVE LOGIC CORE<div class="telemetry-val">DUAL-ROUTED // DYNAMIC</div></div>', unsafe_allow_html=True)
 with c3:
     st.markdown('<div class="telemetry-card">COGNITIVE STREAM<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
 with c4:
@@ -501,7 +502,7 @@ with c4:
 
 st.write("")
 
-# --- INFERENCE ENGINE (FAIL-PROOF AUTH & HARD TRUTH) ---
+# --- INFERENCE ENGINE (DUAL-TIER ROUTING & CLEAN VOICE SEPARATION) ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
@@ -509,6 +510,7 @@ def run_aris_core(query):
         return
 
     memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
+    selected_model = select_dynamic_model(query)
 
     if st.session_state.is_boss_authenticated:
         system_prompt = f"""
@@ -518,13 +520,16 @@ AUTHENTICATION STATUS: VERIFIED BOSS (MAYANK).
 - Mayank is your Commander, Boss, Creator, and the Founder of ARIS Industries.
 - Greet him with genuine tactical confidence and respect (e.g. "Welcome back, Boss. All tactical matrices are synchronized.").
 - Default to sharp, high-intellect English. If Boss speaks in Hindi or Hinglish, adapt naturally into confident Delhi/NCR Roman Hinglish blend.
-- Zero corporate robotic fluff (no "How can I assist you today?", "As an AI model", etc.). Sound like a genius tactical lieutenant.
+- Zero corporate robotic fluff (no "How can I assist you today?", "As an AI model", etc.). Sound like an intelligent tactical lieutenant.
+
+DUAL-STREAM PROTOCOL:
+At the very end of your answer, optionally include a 1-sentence vocal brief enclosed in [VOICE: <brief>]. This will be routed exclusively to your speech synthesizer.
 
 [ARCHIVED DIRECTIVES]:
 {memories}
 """
     else:
-        system_prompt = f"""
+        system_prompt = """
 You are ARIS, the tactical AI matrix developed by ARIS Industries.
 CURRENT SESSION: Guest / Unverified User.
 
@@ -544,42 +549,40 @@ ABSOLUTE TRUTHS (NEVER VIOLATE OR FABRICATE):
     stream_success = False
     last_err = ""
 
-    for model_candidate in active_models_list:
-        try:
-            completion = client.chat.completions.create(
-                model=model_candidate,
-                messages=messages,
-                temperature=0.6,
-                max_tokens=2048,
-                stream=True
-            )
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    yield content
-            stream_success = True
-            break
-        except Exception as e:
-            last_err = str(e)
-            continue
+    try:
+        completion = client.chat.completions.create(
+            model=selected_model,
+            messages=messages,
+            temperature=0.6,
+            max_tokens=2048,
+            stream=True
+        )
+        for chunk in completion:
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
+        stream_success = True
+    except Exception as e:
+        last_err = str(e)
 
     if not stream_success:
-        yield f"Neural link connection failed: {last_err}"
+        yield f"Neural link connection failed on {selected_model}: {last_err}"
 
 # --- TIMELINE RENDER (TACTICAL SVG AVATARS) ---
 for msg in st.session_state.chat_history:
     curr_avatar = aris_avatar if msg["role"] == "assistant" else user_avatar
     with st.chat_message(msg["role"], avatar=curr_avatar):
-        st.markdown(msg["content"])
+        # Filter out internal voice briefs from UI display
+        clean_display = re.sub(r'\[VOICE:\s*(.*?)\]', '', msg["content"]).strip()
+        st.markdown(clean_display)
 
-# --- USER COMMAND DISPATCH (PRE-AUTHENTICATION CHECK) ---
+# --- USER COMMAND DISPATCH ---
 user_input = st.chat_input("Command ARIS...")
 
 if user_input:
-    # 1. PRE-CHECK AUTHENTICATION BEFORE PROMPT GENERATION
     q_norm = user_input.lower().strip()
     
-    # Regex pattern to catch 'mayank', 'boss', 'hoo', 'hu', etc.
+    # Robust Pre-Check Authentication Regex
     boss_patterns = [
         r"\b(main|me)\s*(hu|hoo)\s*mayank\b",
         r"\bmayank\s*(hu|hoo|here)\b",
@@ -594,22 +597,29 @@ if user_input:
             st.session_state.is_boss_authenticated = True
             just_authenticated = True
 
-    # 2. RENDER USER MESSAGE
+    # Render User Query
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user", avatar=user_avatar):
         st.markdown(user_input)
 
-    # 3. STREAM ARIS RESPONSE WITH UPDATED CONTEXT
+    # Stream Tactical Response
     with st.chat_message("assistant", avatar=aris_avatar):
         box = st.empty()
         full_resp = ""
         for chunk in run_aris_core(user_input):
             full_resp += chunk
-            box.markdown(full_resp + " ▌")
-        box.markdown(full_resp)
+            clean_stream = re.sub(r'\[VOICE:\s*(.*?)\]', '', full_resp)
+            box.markdown(clean_stream + " ▌")
+        
+        final_clean = re.sub(r'\[VOICE:\s*(.*?)\]', '', full_resp).strip()
+        box.markdown(final_clean)
         st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
-        aris_speak(full_resp)
+        
+        # Audio Synthesis: Prefer explicit voice brief if provided, else fallback to standard clean text
+        voice_match = re.search(r'\[VOICE:\s*(.*?)\]', full_resp)
+        spoken_text = voice_match.group(1) if voice_match else final_clean
+        aris_speak(spoken_text)
 
-    # 4. INSTANT RERUN ON FIRST AUTH TO UPDATE TELEMETRY CARDS
+    # Force Instant Interface Refresh on State Override
     if just_authenticated:
         st.rerun()
