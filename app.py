@@ -213,25 +213,37 @@ def get_groq_client():
         return None
     return Groq(api_key=api_key.strip())
 
-# --- DYNAMIC INTEL DISPATCHER ---
-def classify_intent_and_model(query: str):
-    q_low = query.lower()
-    
-    # Advanced Doubt Solving / Science / Logic
-    doubt_keywords = [
-        "irodov", "krotov", "hcv", "jeee", "physics", "chemistry", "math", 
-        "calculus", "derive", "solve", "question", "problem", "kinematics", 
-        "thermodynamics", "organic", "velocity", "integration"
-    ]
-    if any(k in q_low for k in doubt_keywords):
-        return "APEX PROBLEM SOLVER", "llama-3.1-70b-versatile", 0.15
+# --- DYNAMIC ACTIVE MODEL DISCOVERY (FAIL-PROOF) ---
+@st.cache_data(ttl=600)
+def get_live_groq_models():
+    client = get_groq_client()
+    if not client:
+        return ["llama-3.1-8b-instant"]
+    try:
+        models_data = client.models.list()
+        # Sirf text-chat models filter karo jo active hain
+        usable = []
+        for m in models_data.data:
+            m_id = m.id.lower()
+            if any(blocked in m_id for blocked in ["whisper", "guard", "orpheus", "prompt-guard", "safeguard", "compound"]):
+                continue
+            usable.append(m.id)
+        
+        # Priority sort: Sabse heavy aur best models pehle
+        priority_keywords = ["120b", "70b", "27b", "20b", "8b"]
+        sorted_models = []
+        for kw in priority_keywords:
+            for u in usable:
+                if kw in u.lower() and u not in sorted_models:
+                    sorted_models.append(u)
+        for u in usable:
+            if u not in sorted_models:
+                sorted_models.append(u)
+        return sorted_models if sorted_models else ["llama-3.1-8b-instant"]
+    except Exception:
+        return ["llama-3.1-8b-instant"]
 
-    # Real-World Strategic & Current Affairs
-    affairs_keywords = ["news", "geopolitics", "market", "economy", "war", "isro", "latest", "world"]
-    if any(k in q_low for k in affairs_keywords):
-        return "GLOBAL RECON & INTEL", "llama-3.1-70b-versatile", 0.4
-
-    return "FLIGHT INTERCEPTOR", "llama-3.1-8b-instant", 0.6
+live_active_models = get_live_groq_models()
 
 # --- HOLOGRAPHIC CORE & PASSIVE RADAR ---
 aris_legendary_reactor_html = """
@@ -558,12 +570,13 @@ st.markdown(f"""
 components.html(aris_legendary_reactor_html, height=285)
 
 # STARK-TIER TELEMETRY HUD
+active_display_core = live_active_models[0].split("/")[-1].upper() if live_active_models else "ONLINE"
 c1, c2, c3, c4 = st.columns(4)
 with c1:
     stat_val = "COMMANDER ACTIVE" if st.session_state.is_boss_authenticated else "GUEST RESTRICTED"
     st.markdown(f'<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">{stat_val}</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown(f'<div class="telemetry-card">OPERATIONAL SUB-CORE<div class="telemetry-val">{st.session_state.last_active_agent}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">LIVE HARDWARE CORE<div class="telemetry-val">{active_display_core}</div></div>', unsafe_allow_html=True)
 with c3:
     st.markdown('<div class="telemetry-card">INTEL VECTOR<div class="telemetry-val">FIRST-PRINCIPLES // ADVANCED</div></div>', unsafe_allow_html=True)
 with c4:
@@ -571,32 +584,20 @@ with c4:
 
 st.write("")
 
-# --- INFERENCE ENGINE WITH FALLBACK QUEUE ---
+# --- INFERENCE ENGINE WITH DYNAMIC LIVE FALLBACK ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
         yield "API key not configured in environment."
         return
 
-    agent_name, preferred_model, temp = classify_intent_and_model(query)
-    st.session_state.last_active_agent = agent_name
     memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
     timestamp_now = datetime.now().strftime("%A, %d %B %Y, %I:%M %p")
-
-    # Resilience Fallback Queue to eliminate 404 errors completely
-    model_fallback_queue = [
-        preferred_model,
-        "llama-3.1-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
-        "gemma2-9b-it"
-    ]
 
     if st.session_state.is_boss_authenticated:
         system_prompt = f"""
 You are ARIS, the apex tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), founder of ARIS Industries.
 TEMPORAL ANCHOR: Current timestamp is {timestamp_now}.
-ACTIVE OPERATIONAL SUB-CORE: {agent_name}
 
 COGNITIVE ARCHITECTURE & REASONING PROTOCOLS:
 1. APEX DOUBT SOLVER PROTOCOL:
@@ -604,10 +605,10 @@ COGNITIVE ARCHITECTURE & REASONING PROTOCOLS:
    - For complex problems (Irodov, Krotov, Advanced Physics/Maths/Chemistry):
      * Do NOT give rushed or vague answers.
      * Break down the problem using **First-Principles Thinking**:
-       1. Identify the fundamental physical/mathematical laws.
+       1. Identify fundamental physical/mathematical laws.
        2. Establish coordinates and constraints clearly.
-       3. Provide step-by-step mathematical derivations with clean text formatting.
-       4. State final answers clearly with physical interpretation.
+       3. Provide step-by-step mathematical derivations.
+       4. State final answers clearly with numerical values and units.
 2. ALL-ROUND INTEL & CURRENT AFFAIRS:
    - Provide high-intellect, sharp analysis on geopolitics, cutting-edge science, space, and tech.
 3. CONVERSATIONAL CADENCE:
@@ -616,10 +617,6 @@ COGNITIVE ARCHITECTURE & REASONING PROTOCOLS:
 
 DUAL-STREAM PROTOCOL:
 At the very end of your response, provide a 1-sentence vocal brief enclosed in [VOICE: <brief>].
-Example: [VOICE: Commander, Irodov question 1 is derived using relative velocity vectors. Net displacement calculated.]
-
-[ARCHIVED DIRECTIVES]:
-{memories}
 """
     else:
         system_prompt = f"""
@@ -641,12 +638,13 @@ ABSOLUTE TRUTHS:
     stream_success = False
     last_err = ""
 
-    for candidate_model in model_fallback_queue:
+    # DYNAMIC AUTO-FALLBACK LOOP: Only test models verified LIVE on Groq API
+    for candidate_model in live_active_models:
         try:
             completion = client.chat.completions.create(
                 model=candidate_model,
                 messages=messages,
-                temperature=temp,
+                temperature=0.3,
                 max_tokens=2048,
                 stream=True
             )
@@ -661,7 +659,7 @@ ABSOLUTE TRUTHS:
             continue
 
     if not stream_success:
-        yield f"Neural link failed across fallback cores: {last_err}"
+        yield f"Neural link failed across all live cores: {last_err}"
 
 # --- TIMELINE RENDER (WITH GEMINI-STYLE VOICE BUTTON) ---
 for idx, msg in enumerate(st.session_state.chat_history):
@@ -670,7 +668,6 @@ for idx, msg in enumerate(st.session_state.chat_history):
         clean_display = re.sub(r'\[VOICE:\s*(.*?)\]', '', msg["content"]).strip()
         st.markdown(clean_display)
         
-        # Assistant message par on-demand Gemini audio play button
         if msg["role"] == "assistant":
             voice_match = re.search(r'\[VOICE:\s*(.*?)\]', msg["content"])
             vocal_summary = voice_match.group(1) if voice_match else clean_display[:180]
