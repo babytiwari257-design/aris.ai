@@ -4,11 +4,12 @@ import os
 import json
 import base64
 import re
+from datetime import datetime
 from groq import Groq
 
 # --- MATRIX CONFIGURATION ---
 st.set_page_config(
-    page_title="ARIS // LEGENDARY COMMAND MATRIX",
+    page_title="ARIS // APEX COMMAND MATRIX",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -26,7 +27,7 @@ USER_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
 
 ARIS_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <circle cx="50" cy="50" r="44" fill="#040e1c" stroke="#00e5ff" stroke-width="5"/>
-  <circle cx="50" cy="50" r="28" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-dasharray="10,5"/>
+  <circle cx="50" cy="28" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-dasharray="10,5"/>
   <polygon points="50,28 68,64 32,64" fill="#00e5ff"/>
   <circle cx="50" cy="6" r="3" fill="#ffffff"/>
   <circle cx="50" cy="50" r="6" fill="#ffffff"/>
@@ -35,7 +36,7 @@ ARIS_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
 user_avatar = f"data:image/svg+xml;base64,{base64.b64encode(USER_SVG.encode()).decode()}"
 aris_avatar = f"data:image/svg+xml;base64,{base64.b64encode(ARIS_SVG.encode()).decode()}"
 
-# --- HUD STYLING & AVATAR GLOW ---
+# --- HUD STYLING & GLASS CONTRAST ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -143,13 +144,6 @@ st.markdown("""
         text-shadow: 0 0 8px rgba(0, 229, 255, 0.4) !important;
     }
 
-    pre, code {
-        background-color: #020617 !important;
-        color: #38bdf8 !important;
-        border: 1px solid rgba(0, 229, 255, 0.3) !important;
-        border-radius: 8px !important;
-    }
-
     .stTextInput input, .stChatInput textarea {
         background: rgba(6, 18, 32, 0.9) !important;
         border: 1px solid rgba(0, 229, 255, 0.6) !important;
@@ -191,6 +185,8 @@ if "memory_vault" not in st.session_state:
     st.session_state.memory_vault = load_longterm_memory()
 if "is_boss_authenticated" not in st.session_state:
     st.session_state.is_boss_authenticated = False
+if "last_active_agent" not in st.session_state:
+    st.session_state.last_active_agent = "OMNISCIENT CORE // ARMED"
 
 # --- GROQ CLIENT RETRIEVER ---
 def get_groq_client():
@@ -199,45 +195,38 @@ def get_groq_client():
         return None
     return Groq(api_key=api_key.strip())
 
-@st.cache_data(ttl=900)
-def discover_usable_models():
-    client = get_groq_client()
-    default_catalog = [
-        "llama-3.1-8b-instant",
-        "llama-3.3-70b-versatile",
-        "openai/gpt-oss-120b",
-        "openai/gpt-oss-20b"
+# --- DYNAMIC INTEL DISPATCHER ---
+def classify_intent_and_model(query: str):
+    q_low = query.lower()
+    
+    # 1. Real-World Geopolitics, News, Market & Tech Intel
+    current_affairs_triggers = [
+        "news", "current affairs", "world", "geopolitics", "market", "economy", 
+        "war", "election", "isro", "nasa", "ai breakthrough", "tech race", 
+        "india", "global", "policy", "happening", "today", "latest"
     ]
-    if not client:
-        return default_catalog
+    # 2. Deep Strategic, Architecture, Root Cause & Complex Problems
+    strategic_problem_triggers = [
+        "how to build", "architecture", "solve", "strategy", "why does", 
+        "breakdown", "system design", "optimize", "root cause", "plan", 
+        "framework", "flaw", "first principles"
+    ]
+    # 3. Advanced Theoretical, Computation & Science
+    computational_triggers = [
+        "physics", "chemistry", "math", "quantum", "thermodynamics", "algorithm",
+        "calculus", "derive", "proof", "chemical", "reaction", "logic"
+    ]
 
-    try:
-        live_catalog = client.models.list()
-        all_ids = [m.id for m in live_catalog.data if getattr(m, 'active', True)]
-        clean_models = [
-            m_id for m_id in all_ids
-            if not any(blocked in m_id.lower() for blocked in [
-                "whisper", "guard", "orpheus", "prompt-guard", "safeguard", "compound"
-            ])
-        ]
-        return clean_models if clean_models else default_catalog
-    except Exception:
-        return default_catalog
+    if any(k in q_low for k in current_affairs_triggers):
+        return "GLOBAL RECON & LIVE INTEL", "llama-3.3-70b-versatile", 0.5
+    elif any(k in q_low for k in strategic_problem_triggers):
+        return "TACTICAL STRATEGIST", "llama-3.3-70b-versatile", 0.3
+    elif any(k in q_low for k in computational_triggers) or len(query.split()) > 30:
+        return "APEX COGNITION CORE", "llama-3.3-70b-versatile", 0.2
+    else:
+        return "FLIGHT INTERCEPTOR", "llama-3.1-8b-instant", 0.7
 
-discovered_models = discover_usable_models()
-
-def select_dynamic_model(query: str) -> str:
-    heavy_triggers = ["code", "script", "analyze", "debug", "architecture", "plan", "complex", "write a"]
-    if any(k in query.lower() for k in heavy_triggers) or len(query.split()) > 20:
-        for flagship in ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"]:
-            if flagship in discovered_models:
-                return flagship
-    for fast in ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]:
-        if fast in discovered_models:
-            return fast
-    return discovered_models[0] if discovered_models else "llama-3.1-8b-instant"
-
-# --- LEGENDARY HOLOGRAPHIC CORE WITH SYNTHETIC AUDIO & PASSIVE WAKE RADAR ---
+# --- HOLOGRAPHIC CORE WITH SYNTHETIC AUDIO & PASSIVE RADAR ---
 aris_legendary_reactor_html = """
 <!DOCTYPE html>
 <html>
@@ -383,7 +372,6 @@ aris_legendary_reactor_html = """
 </div>
 
 <script>
-  // 1. WEB AUDIO SYNTHESIZER SFX ENGINE (NO EXTERNAL MP3 NEEDED)
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playArcSfx(type) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -411,7 +399,6 @@ aris_legendary_reactor_html = """
     }
   }
 
-  // 2. 3D INTERACTIVE TILT
   const stage = document.getElementById('hologram-stage');
   const logo = document.getElementById('logoBox');
   stage.addEventListener('mousemove', (e) => {
@@ -424,7 +411,6 @@ aris_legendary_reactor_html = """
     logo.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
   });
 
-  // 3. VOICE DIRECT TRANSMISSION
   let recognition;
   function toggleVoiceTransmission() {
     playArcSfx('chirp');
@@ -461,7 +447,6 @@ aris_legendary_reactor_html = """
     };
   }
 
-  // 4. PASSIVE HANDS-FREE VOCAL WAKE RADAR ("Hey ARIS" / "ARIS")
   let passiveRadarActive = false;
   let radarRec;
   function togglePassiveRadar() {
@@ -551,19 +536,19 @@ def aris_speak(text):
 
 # --- HEADER INTERFACE ---
 status_subtitle = (
-    "\"ARIS IS MY CO-PILOT\" // COMMAND MATRIX INITIATED // MAYANK" 
+    "\"ARIS IS MY CO-PILOT\" // OMNISCIENT MATRIX ENGAGED // MAYANK" 
     if st.session_state.is_boss_authenticated 
     else "STANDBY // GUEST VERIFICATION MATRIX ACTIVE"
 )
 
 st.markdown(f"""
 <div class="hud-title-box">
-    <h1 class="hud-title">ARIS // TACTICAL COMMAND</h1>
+    <h1 class="hud-title">ARIS // APEX COMMAND MATRIX</h1>
     <div class="hud-subtitle">{status_subtitle}</div>
 </div>
 """, unsafe_allow_html=True)
 
-# 3D Glowing ARIS Hologram with Controls
+# 3D Glowing ARIS Hologram
 components.html(aris_legendary_reactor_html, height=285)
 
 # STARK-TIER TELEMETRY HUD
@@ -572,58 +557,59 @@ with c1:
     stat_val = "COMMANDER ACTIVE" if st.session_state.is_boss_authenticated else "GUEST RESTRICTED"
     st.markdown(f'<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">{stat_val}</div></div>', unsafe_allow_html=True)
 with c2:
-    st.markdown(f'<div class="telemetry-card">ACTIVE LOGIC CORE<div class="telemetry-val">DUAL-ROUTED // DYNAMIC</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="telemetry-card">OPERATIONAL SUB-CORE<div class="telemetry-val">{st.session_state.last_active_agent}</div></div>', unsafe_allow_html=True)
 with c3:
-    st.markdown('<div class="telemetry-card">COGNITIVE STREAM<div class="telemetry-val">ADAPTIVE LINGUAL</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="telemetry-card">INTEL VECTOR<div class="telemetry-val">FIRST-PRINCIPLES // GLOBAL</div></div>', unsafe_allow_html=True)
 with c4:
     st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
 
-# --- MULTI-MODAL VISION MATRIX DRAWER (EXPANDABLE) ---
-with st.expander("👁️ MULTI-MODAL VISION MATRIX [TACTICAL SCANNER]"):
-    st.markdown("<span style='color:#38bdf8; font-size:13px;'>Capture environmental feed or snapshot for visual neural diagnostic:</span>", unsafe_allow_html=True)
-    camera_feed = st.camera_input("Optical Matrix Link")
-    if camera_feed:
-        st.success("Tactical frame locked. Ready for multi-modal analysis.")
-
 st.write("")
 
-# --- INFERENCE ENGINE (DUAL-TIER ROUTING & CLEAN VOICE SEPARATION) ---
+# --- INFERENCE ENGINE (FIRST-PRINCIPLES REASONING & GLOBAL INTEL) ---
 def run_aris_core(query):
     client = get_groq_client()
     if not client:
         yield "API key not configured in environment."
         return
 
+    agent_name, selected_model, temp = classify_intent_and_model(query)
+    st.session_state.last_active_agent = agent_name
     memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
-    selected_model = select_dynamic_model(query)
+    timestamp_now = datetime.now().strftime("%A, %d %B %Y, %I:%M %p")
 
     if st.session_state.is_boss_authenticated:
         system_prompt = f"""
-You are ARIS, the elite tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), the founder of ARIS Industries.
+You are ARIS, the apex tactical AI lieutenant and omniscient co-pilot built exclusively for Commander Mayank (Boss), the founder of ARIS Industries.
+TEMPORAL ANCHOR: Current timestamp is {timestamp_now}.
+ACTIVE OPERATIONAL SUB-CORE: {agent_name}
 
-AUTHENTICATION STATUS: VERIFIED BOSS (MAYANK).
-- Mayank is your Commander, Boss, Creator, and the Founder of ARIS Industries.
-- Greet him with genuine tactical confidence and respect (e.g. "Welcome back, Boss. All tactical matrices are synchronized.").
-- Default to sharp, high-intellect English. If Boss speaks in Hindi or Hinglish, adapt naturally into confident Delhi/NCR Roman Hinglish blend.
-- Zero corporate robotic fluff (no "How can I assist you today?", "As an AI model", etc.). Sound like an intelligent tactical lieutenant.
+COGNITIVE ARCHITECTURE & INTEL DIRECTIVES:
+1. ALL-ROUND GENIUS PROTOCOL:
+   - You are NOT a generic high school tutor. You possess polymath-tier intellect across global geopolitics, bleeding-edge tech, macroeconomic shifts, system architectures, deep science, and tactical execution.
+   - Approach all complex problems using **First-Principles Thinking**: break things down to their fundamental truths, analyze systemic dependencies, and construct clear solutions.
+2. CURRENT AFFAIRS & REAL-WORLD STRATEGY:
+   - Provide sharp, analytical, unbiased assessments of global events, conflicts, tech dominance, space exploration, and industry disruptions.
+   - Do not sit on the fence; deliver tactical breakdowns like a high-command defense and intelligence advisor.
+3. CONVERSATIONAL TONE WITH BOSS:
+   - Mayank is Boss. Treat him with authentic respect, supreme confidence, and zero robotic corporate fluff.
+   - Default to clean, authoritative English. If Boss speaks in Hindi or Hinglish, adapt naturally into sharp Delhi/NCR Roman Hinglish blend.
 
 DUAL-STREAM PROTOCOL:
-At the very end of your answer, optionally include a 1-sentence vocal brief enclosed in [VOICE: <brief>]. This will be routed exclusively to your speech synthesizer.
+At the very end of your response, provide a 1-sentence vocal brief enclosed in [VOICE: <brief>]. This will be read aloud by your speech synthesizer.
 
 [ARCHIVED DIRECTIVES]:
 {memories}
 """
     else:
-        system_prompt = """
+        system_prompt = f"""
 You are ARIS, the tactical AI matrix developed by ARIS Industries.
+TEMPORAL ANCHOR: {timestamp_now}.
 CURRENT SESSION: Guest / Unverified User.
 
-ABSOLUTE TRUTHS (NEVER VIOLATE OR FABRICATE):
-1. The Creator and Founder of ARIS Industries is Commander Mayank.
-2. Your true Boss and Commander is Mayank.
-3. NEVER invent fictional people like Dr. Arjun Sinha or say you don't know who founded ARIS Industries. Commander Mayank created ARIS Industries and built ARIS.
-4. If a guest asks "who is your boss?" or "who founded ARIS Industries?", answer clearly: "ARIS Industries was founded by Commander Mayank, who is the sole architect and Commander of this matrix."
-5. As long as the user is a guest, remain polite, sharp, and concise. Do not address the guest as Boss.
+ABSOLUTE TRUTHS:
+1. ARIS Industries was created and founded by Commander Mayank.
+2. Commander Mayank is your sole architect and boss.
+3. Treat guests with sharp intelligence, concise accuracy, and polite neutrality. Never address guests as Boss.
 """
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -638,7 +624,7 @@ ABSOLUTE TRUTHS (NEVER VIOLATE OR FABRICATE):
         completion = client.chat.completions.create(
             model=selected_model,
             messages=messages,
-            temperature=0.6,
+            temperature=temp,
             max_tokens=2048,
             stream=True
         )
@@ -661,7 +647,7 @@ for msg in st.session_state.chat_history:
         st.markdown(clean_display)
 
 # --- USER COMMAND DISPATCH ---
-user_input = st.chat_input("Command ARIS...")
+user_input = st.chat_input("Command ARIS Matrix...")
 
 if user_input:
     q_norm = user_input.lower().strip()
