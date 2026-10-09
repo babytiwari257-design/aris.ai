@@ -14,7 +14,7 @@ try:
 except Exception:
     HARDWARE_ONLINE = False
     def execute_os_action(action_tag, target=""):
-        return "Hardware link offline or system_controller unavailable."
+        return "Hardware link offline: system_controller unavailable on cloud."
     def get_live_telemetry():
         return "Hardware Telemetry Offline"
 
@@ -545,4 +545,4 @@ st.markdown(f"""
     <h1 class="hud-title">ARIS // APEX COMMAND MATRIX</h1>
     <div class="hud-subtitle">{status_subtitle}</div>
 </div>
-""", unsafe_allow_html=True
+""", unsafe_allow_ht
