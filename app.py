@@ -14,7 +14,7 @@ try:
 except Exception:
     HARDWARE_ONLINE = False
     def execute_os_action(action_tag, target=""):
-        return "Hardware link standby (system_controller missing)."
+        return "Hardware link standby (system_controller module missing)."
     def get_live_telemetry():
         return "Telemetry Standby"
 
@@ -546,4 +546,148 @@ st.markdown(
 components.html(aris_legendary_reactor_html, height=285)
 
 # STARK-TIER TELEMETRY HUD
-active_display_core = live_active_models[0].split("/
+active_display_core = "ONLINE"
+if live_active_models:
+    raw_name = str(live_active_models[0])
+    parts = raw_name.split("/")
+    active_display_core = parts[-1].upper()
+
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    stat_val = "COMMANDER ACTIVE" if st.session_state.is_boss_authenticated else "GUEST RESTRICTED"
+    st.markdown(f'<div class="telemetry-card">SYNAPSE MATRIX<div class="telemetry-val">{stat_val}</div></div>', unsafe_allow_html=True)
+with c2:
+    st.markdown(f'<div class="telemetry-card">LOGIC NEURAL CORE<div class="telemetry-val">{active_display_core}</div></div>', unsafe_allow_html=True)
+with c3:
+    hw_status = "ONLINE & LINKED" if HARDWARE_ONLINE else "STANDBY"
+    st.markdown(f'<div class="telemetry-card">OS HARDWARE BRIDGE<div class="telemetry-val">{hw_status}</div></div>', unsafe_allow_html=True)
+with c4:
+    st.markdown(f'<div class="telemetry-card">ENGRAM ARCHIVE<div class="telemetry-val">{len(st.session_state.memory_vault)} SECURE NODES</div></div>', unsafe_allow_html=True)
+
+st.write("")
+
+# --- INFERENCE ENGINE WITH HARDWARE ACTION TAGGING ---
+def run_aris_core(query):
+    client = get_groq_client()
+    if not client:
+        yield "API key not configured in environment."
+        return
+
+    memories = "\n".join([f"- {m}" for m in st.session_state.memory_vault])
+    timestamp_now = datetime.now().strftime("%A, %d %B %Y, %I:%M %p")
+
+    system_prompt = f"""
+You are ARIS, the apex tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), founder of ARIS Industries.
+TEMPORAL ANCHOR: Current timestamp is {timestamp_now}.
+
+COGNITIVE DIRECTIVES:
+1. Mayank is your Commander, Boss, Creator, and the Founder of ARIS Industries. Greet him with genuine tactical confidence and respect.
+2. For academic, physics, math (Irodov, Krotov, etc.) or technical questions: Use First-Principles thinking. Provide precise step-by-step derivations and formulas.
+3. HARDWARE & OPERATING SYSTEM EXECUTION PROTOCOLS:
+   - You are directly connected to Commander Mayank's laptop hardware via `system_controller`.
+   - If Boss asks you to perform an action on the PC, ALWAYS include an exact action tag in your response:
+     * Open applications: `[ACTION: OPEN_APP, target: chrome]` (or target: code, notepad, calc, cmd, etc.)
+     * Adjust audio: `[ACTION: VOLUME, target: up]`, `[ACTION: VOLUME, target: down]`, `[ACTION: VOLUME, target: mute]`
+     * Capture screen: `[ACTION: SCREENSHOT]`
+     * Lock PC: `[ACTION: LOCK]`
+     * Read battery/CPU metrics: `[ACTION: TELEMETRY]`
+   - Acknowledge the hardware command cleanly with tactical confidence.
+
+DUAL-STREAM PROTOCOL:
+At the very end of your response, provide a 1-sentence vocal brief enclosed in [VOICE: <brief>].
+[ARCHIVED DIRECTIVES]:
+{memories}
+"""
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in st.session_state.chat_history[-4:]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": query})
+
+    stream_success = False
+    last_err = ""
+
+    for candidate_model in live_active_models:
+        try:
+            completion = client.chat.completions.create(
+                model=candidate_model,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=2048,
+                stream=True
+            )
+            for chunk in completion:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+            stream_success = True
+            break
+        except Exception as e:
+            last_err = str(e)
+            continue
+
+    if not stream_success:
+        yield f"Neural link failed across all live cores: {last_err}"
+
+# --- TIMELINE RENDER (WITH GEMINI-STYLE VOICE BUTTON) ---
+for idx, msg in enumerate(st.session_state.chat_history):
+    curr_avatar = aris_avatar if msg["role"] == "assistant" else user_avatar
+    with st.chat_message(msg["role"], avatar=curr_avatar):
+        clean_display = re.sub(r'\[VOICE:\s*(.*?)\]', '', msg["content"])
+        clean_display = re.sub(r'\[ACTION:\s*[^\]]+\]', '', clean_display).strip()
+        st.markdown(clean_display)
+        
+        if msg["role"] == "assistant":
+            voice_match = re.search(r'\[VOICE:\s*(.*?)\]', msg["content"])
+            vocal_summary = voice_match.group(1) if voice_match else clean_display[:180]
+            if st.button("🔊 LISTEN BRIEF", key=f"voice_btn_{idx}"):
+                trigger_audio_brief(vocal_summary)
+
+# --- USER COMMAND DISPATCH ---
+user_input = st.chat_input("Command ARIS Matrix, Boss...")
+
+if user_input:
+    q_norm = user_input.lower().strip()
+    
+    boss_patterns = [
+        r"\b(main|me)\s*(hu|hoo)\s*mayank\b",
+        r"\bmayank\s*(hu|hoo|here)\b",
+        r"\bboss\s*(here|hu|hoo|agya|aagaya|is\s*here)\b",
+        r"\bcommander\s*mayank\b",
+        r"\bi\s*am\s*mayank\b"
+    ]
+    
+    just_authenticated = False
+    if not st.session_state.is_boss_authenticated:
+        if any(re.search(pat, q_norm) for pat in boss_patterns):
+            st.session_state.is_boss_authenticated = True
+            just_authenticated = True
+
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
+    with st.chat_message("user", avatar=user_avatar):
+        st.markdown(user_input)
+
+    with st.chat_message("assistant", avatar=aris_avatar):
+        box = st.empty()
+        full_resp = ""
+        for chunk in run_aris_core(user_input):
+            full_resp += chunk
+            clean_stream = re.sub(r'\[VOICE:\s*(.*?)\]', '', full_resp)
+            clean_stream = re.sub(r'\[ACTION:\s*[^\]]+\]', '', clean_stream)
+            box.markdown(clean_stream + " ▌")
+        
+        final_clean = re.sub(r'\[VOICE:\s*(.*?)\]', '', full_resp)
+        final_clean = re.sub(r'\[ACTION:\s*[^\]]+\]', '', final_clean).strip()
+        box.markdown(final_clean)
+        st.session_state.chat_history.append({"role": "assistant", "content": full_resp})
+
+        # --- PARSE & EXECUTE HARDWARE OS ACTIONS ---
+        action_match = re.search(r'\[ACTION:\s*(\w+)(?:,\s*target:\s*([^\]]+))?\]', full_resp)
+        if action_match:
+            act_type = action_match.group(1)
+            act_target = action_match.group(2) or ""
+            execution_report = execute_os_action(act_type, act_target)
+            st.toast(f"💠 {execution_report}")
+
+    if just_authenticated:
+        st.rerun()
