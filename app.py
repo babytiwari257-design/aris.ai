@@ -6,12 +6,13 @@ import time
 from datetime import datetime
 import streamlit.components.v1 as components
 
-# Guarded imports
+# Safe Import: DuckDuckGo Search
 try:
     from duckduckgo_search import DDGS
 except ImportError:
     DDGS = None
 
+# Safe Import: Local System Controller
 try:
     import system_controller
 except ImportError:
@@ -64,14 +65,14 @@ if "memory" not in st.session_state:
     st.session_state.memory = load_longterm_memory()
 
 # ==============================================================================
-# NEON GLOW STARK HUD + 'A' EMBLEM CSS
+# ULTIMATE NEON GLOW STARK HUD & PURE CODE 'A' ARC-REACTOR CSS
 # ==============================================================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap');
 
 html, body, [data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at 50% 12%, #081a30 0%, #030a16 55%, #01040a 100%) !important;
+    background: radial-gradient(circle at 50% 18%, #081a30 0%, #030a16 55%, #01040a 100%) !important;
     font-family: 'Rajdhani', sans-serif;
     color: #d8f0ff;
     overflow-x: hidden;
@@ -81,7 +82,7 @@ html, body, [data-testid="stAppViewContainer"] {
     background: transparent !important;
 }
 
-/* Background Cyber Matrix Grid */
+/* Cyber Matrix Background Grid */
 [data-testid="stAppViewContainer"]::before {
     content: " ";
     position: fixed;
@@ -94,123 +95,113 @@ html, body, [data-testid="stAppViewContainer"] {
     z-index: 0;
 }
 
-/* Header Container */
-.aris-header-card {
-    background: rgba(4, 15, 30, 0.88);
-    border: 1px solid #00f0ff;
-    box-shadow: 0 0 35px rgba(0, 240, 255, 0.22), inset 0 0 25px rgba(0, 240, 255, 0.07);
-    border-radius: 8px;
-    padding: 18px 24px;
-    margin-bottom: 22px;
+/* Center Stage Arc Reactor & Crest Deck */
+.center-hud-deck {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.arc-reactor-core-frame {
     position: relative;
-    backdrop-filter: blur(16px);
-}
-
-.aris-header-card::before {
-    content: "STARK TACTICAL // OS-7";
-    position: absolute;
-    top: -10px; right: 24px;
-    background: #010712;
-    border: 1px solid #00ffa3;
-    color: #00ffa3;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    padding: 2px 10px;
-    letter-spacing: 2px;
-}
-
-.aris-main-title {
-    font-family: 'Orbitron', sans-serif;
-    color: #00f0ff;
-    font-size: 30px;
-    font-weight: 900;
-    letter-spacing: 4px;
-    text-shadow: 0 0 20px rgba(0, 240, 255, 0.9), 0 0 40px rgba(0, 240, 255, 0.4);
-    margin: 0;
-}
-
-.aris-sub-motto {
-    font-family: 'Share Tech Mono', monospace;
-    color: #00ffa3;
-    font-size: 12px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
-}
-
-/* --- THE ICONIC 'A' EMBLEM REACTOR --- */
-.emblem-wrapper {
-    position: relative;
-    width: 80px;
-    height: 80px;
+    width: 170px;
+    height: 170px;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 12px;
 }
 
-.emblem-outer-ring {
+.arc-spin-ring-outer {
     position: absolute;
-    width: 76px;
-    height: 76px;
+    width: 166px;
+    height: 166px;
     border-radius: 50%;
     border: 2px dashed #00ffa3;
-    animation: ringOrbit 10s linear infinite;
+    box-shadow: 0 0 25px rgba(0, 255, 163, 0.45);
+    animation: spinClockwise 12s linear infinite;
 }
 
-.emblem-inner-core {
+.arc-spin-ring-inner {
     position: absolute;
-    width: 58px;
-    height: 58px;
+    width: 148px;
+    height: 148px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 240, 255, 0.35) 0%, rgba(4, 15, 30, 0.9) 75%);
     border: 2px solid #00f0ff;
-    box-shadow: 0 0 25px #00f0ff, inset 0 0 15px rgba(0, 240, 255, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.6), inset 0 0 25px rgba(0, 240, 255, 0.35);
+    animation: spinCounter 8s linear infinite;
 }
 
-.emblem-letter {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 32px;
-    font-weight: 900;
-    color: #ffffff;
-    text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff, 0 0 35px #00ffa3;
-    animation: letterPulse 2s ease-in-out infinite alternate;
+/* Pure SVG Metallic 'A' Crest Emblem */
+.crest-svg-container {
+    width: 125px;
+    height: 125px;
+    z-index: 2;
+    filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.85)) drop-shadow(0 0 30px rgba(0, 255, 163, 0.4));
+    animation: emblemPulse 2.5s ease-in-out infinite alternate;
 }
 
-@keyframes ringOrbit {
+@keyframes spinClockwise {
     100% { transform: rotate(360deg); }
 }
 
-@keyframes letterPulse {
-    0% { transform: scale(0.92); opacity: 0.85; }
-    100% { transform: scale(1.08); opacity: 1; }
+@keyframes spinCounter {
+    100% { transform: rotate(-360deg); }
 }
 
-/* Telemetry Pills */
-.telemetry-rack {
+@keyframes emblemPulse {
+    0% { transform: scale(0.96); filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.7)); }
+    100% { transform: scale(1.04); filter: drop-shadow(0 0 24px rgba(0, 240, 255, 1)) drop-shadow(0 0 36px rgba(0, 255, 163, 0.6)); }
+}
+
+.aris-title-text {
+    font-family: 'Orbitron', sans-serif;
+    color: #00f0ff;
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.9), 0 0 40px rgba(0, 240, 255, 0.4);
+    margin: 4px 0;
+}
+
+.aris-sub-text {
+    font-family: 'Share Tech Mono', monospace;
+    color: #00ffa3;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
+    margin-bottom: 15px;
+}
+
+/* Telemetry Badges */
+.telemetry-row {
     display: flex;
+    justify-content: center;
     gap: 12px;
-    margin-top: 12px;
     flex-wrap: wrap;
+    margin-bottom: 10px;
 }
 
-.telemetry-chip {
+.telemetry-badge {
     background: rgba(0, 240, 255, 0.08);
-    border: 1px solid rgba(0, 240, 255, 0.35);
-    padding: 4px 14px;
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    padding: 5px 16px;
     border-radius: 4px;
     font-family: 'Share Tech Mono', monospace;
     font-size: 11px;
-    color: #72e9ff;
+    color: #7be9ff;
     letter-spacing: 1.5px;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
 }
 
 /* Chat Styling */
 .stChatMessage {
-    background: rgba(4, 14, 28, 0.85) !important;
+    background: rgba(4, 14, 28, 0.88) !important;
     border: 1px solid rgba(0, 240, 255, 0.25) !important;
     border-left: 5px solid #00f0ff !important;
     border-radius: 6px !important;
@@ -218,7 +209,6 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-bottom: 16px !important;
 }
 
-/* Buttons & Inputs */
 .stButton button {
     background: linear-gradient(135deg, rgba(0, 240, 255, 0.18) 0%, rgba(0, 255, 163, 0.1) 100%) !important;
     color: #00f0ff !important;
@@ -233,7 +223,7 @@ html, body, [data-testid="stAppViewContainer"] {
 
 .stButton button:hover {
     background: #00f0ff !important;
-    color: #020712 !important;
+    color: #01050e !important;
     box-shadow: 0 0 25px #00f0ff, 0 0 45px rgba(0, 240, 255, 0.6) !important;
 }
 
@@ -247,7 +237,7 @@ html, body, [data-testid="stAppViewContainer"] {
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# AUDIO & RADAR WAKE SCRIPTS
+# AUDIO SFX & RADAR SCRIPT
 # ==============================================================================
 def play_sfx_script(sfx_type):
     js_code = f"""
@@ -321,14 +311,14 @@ def inject_wake_radar():
     components.html(radar_js, height=0, width=0)
 
 # ==============================================================================
-# GROQ CLOUD ENGINE & AUTO-RESILIENT FALLBACK
+# GROQ CLIENT SETUP
 # ==============================================================================
 api_key = os.environ.get("GROQ_API_KEY")
 if not api_key and "GROQ_API_KEY" in st.secrets:
     api_key = st.secrets["GROQ_API_KEY"]
 
 if not api_key:
-    st.error("GROQ_API_KEY REQUIRED: Set in environment or Streamlit Secrets.")
+    st.error("SYSTEM ERROR: GROQ_API_KEY nahi mili! Streamlit Cloud ke Settings -> Secrets me GROQ_API_KEY daalein.")
     st.stop()
 
 client = Groq(api_key=api_key)
@@ -359,38 +349,73 @@ def query_groq_resilient(chat_payload):
     return f"[TELEMETRY DISTORTION]: {str(last_err)}"
 
 # ==============================================================================
-# HEADER DECK WITH THE 'A' EMBLEM
+# PURE CODE: SVG METALLIC 'A' + ARC REACTOR CENTER STAGE
 # ==============================================================================
-col_emblem, col_brand, col_btn = st.columns([1.2, 6, 2])
+metallic_a_svg = """
+<svg class="crest-svg-container" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b8d5e5" />
+      <stop offset="25%" stop-color="#6a8ca8" />
+      <stop offset="50%" stop-color="#2c4c66" />
+      <stop offset="75%" stop-color="#739bb8" />
+      <stop offset="100%" stop-color="#e2f1fa" />
+    </linearGradient>
+    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00ffa3" />
+      <stop offset="100%" stop-color="#00f0ff" />
+    </linearGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Outer Hexagonal Frame Layer -->
+  <polygon points="100,22 165,58 165,138 100,178 35,138 35,58" stroke="url(#metalGrad)" stroke-width="4.5" fill="none" opacity="0.85" />
+  <polygon points="100,28 158,62 158,134 100,170 42,134 42,62" stroke="url(#neonCyan)" stroke-width="2" fill="none" opacity="0.6" filter="url(#neonGlow)" />
+  
+  <!-- The Iconic Metallic Geometric 'A' Crest -->
+  <path d="M 100,38 L 148,145 L 126,145 L 115,120 L 85,120 L 74,145 L 52,145 Z" fill="url(#metalGrad)" stroke="#00f0ff" stroke-width="2" />
+  
+  <!-- Inner Cutout -->
+  <polygon points="100,68 110,104 90,104" fill="#040d1a" stroke="url(#neonCyan)" stroke-width="2" />
+  
+  <!-- Circuit Neon Trace Accents inside 'A' -->
+  <path d="M 100,45 L 138,135" stroke="#00f0ff" stroke-width="2.5" stroke-linecap="round" filter="url(#neonGlow)" />
+  <circle cx="138" cy="135" r="3" fill="#00ffa3" filter="url(#neonGlow)" />
+  <path d="M 75,135 L 90,105" stroke="#00ffa3" stroke-width="2" stroke-linecap="round" filter="url(#neonGlow)" />
+  <circle cx="75" cy="135" r="2.5" fill="#00f0ff" filter="url(#neonGlow)" />
+  
+  <!-- Horizontal Core Power Bar -->
+  <line x1="80" y1="112" x2="120" y2="112" stroke="#00ffa3" stroke-width="3" filter="url(#neonGlow)" />
+</svg>
+"""
 
-with col_emblem:
-    st.markdown("""
-    <div class="emblem-wrapper">
-        <div class="emblem-outer-ring"></div>
-        <div class="emblem-inner-core">
-            <span class="emblem-letter">A</span>
-        </div>
+hw_status = "ONLINE" if system_controller else "STANDBY"
+dossier_status = "SYNCHRONIZED" if os.path.exists(CONTEXT_FILE) else "DEFAULT"
+
+st.markdown(f"""
+<div class="center-hud-deck">
+    <div class="arc-reactor-core-frame">
+        <div class="arc-spin-ring-outer"></div>
+        <div class="arc-spin-ring-inner"></div>
+        {metallic_a_svg}
     </div>
-    """, unsafe_allow_html=True)
-
-with col_brand:
-    dossier_text = "AUTHENTICATED" if os.path.exists(CONTEXT_FILE) else "DEFAULT"
-    hw_text = "ONLINE" if system_controller else "STANDBY"
-    
-    st.markdown(f"""
-    <div class="aris-header-card">
-        <div class="aris-main-title">ARIS INDUSTRIES // APEX MATRIX</div>
-        <div class="aris-sub-motto">AUTONOMOUS RECONNAISSANCE & INTELLIGENCE SYSTEM // STARK PROTOCOL</div>
-        <div class="telemetry-rack">
-            <span class="telemetry-chip">COMMANDER: MAYANK TIWARI (BOSS)</span>
-            <span class="telemetry-chip">CORE: LLAMA-3.3-70B AUTO</span>
-            <span class="telemetry-chip">HARDWARE: {hw_text}</span>
-            <span class="telemetry-chip">DOSSIER: {dossier_text}</span>
-        </div>
+    <div class="aris-title-text">ARIS INDUSTRIES</div>
+    <div class="aris-sub-text">AUTONOMOUS RECONNAISSANCE & INTELLIGENCE SYSTEM // APEX CORE</div>
+    <div class="telemetry-row">
+        <span class="telemetry-badge">COMMANDER: MAYANK TIWARI (BOSS)</span>
+        <span class="telemetry-badge">COGNITIVE ENGINE: LLAMA-3.3-70B AUTO</span>
+        <span class="telemetry-badge">HARDWARE CONTROL: {hw_status}</span>
+        <span class="telemetry-badge">DOSSIER: {dossier_status}</span>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
-with col_btn:
+# Top Bar Control
+col_space, col_purge = st.columns([8, 2])
+with col_purge:
     if st.button("PURGE BUFFER", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
@@ -398,7 +423,7 @@ with col_btn:
 inject_wake_radar()
 
 # ==============================================================================
-# CONVERSATION STREAM
+# CHAT LOGS
 # ==============================================================================
 if "messages" not in st.session_state:
     st.session_state.messages = [{
@@ -427,7 +452,7 @@ for idx, msg in enumerate(st.session_state.messages):
                 components.html(speech_script, height=0, width=0)
 
 # ==============================================================================
-# HARDWARE INTERCEPT & SEARCH
+# HARDWARE DISPATCHER
 # ==============================================================================
 def intercept_hardware_action(command_str):
     if not system_controller:
@@ -472,7 +497,7 @@ def search_radar_intel(query_text):
     return ""
 
 # ==============================================================================
-# NEURAL REASONING ENGINE
+# NEURAL REASONING CORE
 # ==============================================================================
 def run_aris_core(query):
     hw_res = intercept_hardware_action(query)
