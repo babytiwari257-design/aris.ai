@@ -6,13 +6,13 @@ import time
 from datetime import datetime
 import streamlit.components.v1 as components
 
-# Safe Import: DuckDuckGo Search (Prevents Streamlit Cloud Crash if missing)
+# Safe Import: DuckDuckGo Search
 try:
     from duckduckgo_search import DDGS
 except ImportError:
     DDGS = None
 
-# Safe Import: Local System Controller (for Windows OS Automation)
+# Safe Import: Local System Controller
 try:
     import system_controller
 except ImportError:
@@ -22,23 +22,22 @@ except ImportError:
 from groq import Groq
 
 # ==============================================================================
-# CONFIGURATION & PAGE LAYOUT
+# PAGE CONFIGURATION
 # ==============================================================================
 st.set_page_config(
-    page_title="ARIS // APEX COMMAND MATRIX",
-    page_icon="⚡",
+    page_title="ARIS INDUSTRIES // TACTICAL HUD",
+    page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # ==============================================================================
-# KNOWLEDGE BASE & PERSISTENT MEMORY MODULES
+# KNOWLEDGE BASE & PERSONAL DOSSIER
 # ==============================================================================
 MEMORY_FILE = "aris_memory.json"
 CONTEXT_FILE = "personal_context.txt"
 
 def load_longterm_memory():
-    """Loads persistent interaction memory from JSON store."""
     if os.path.exists(MEMORY_FILE):
         try:
             with open(MEMORY_FILE, "r", encoding="utf-8") as f:
@@ -48,7 +47,6 @@ def load_longterm_memory():
     return {}
 
 def save_longterm_memory(data):
-    """Saves updated memory states to JSON store."""
     try:
         with open(MEMORY_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
@@ -56,10 +54,6 @@ def save_longterm_memory(data):
         pass
 
 def load_personal_context():
-    """
-    Loads Commander Mayank's apex personal dossier and family nexus
-    directly from personal_context.txt.
-    """
     if os.path.exists(CONTEXT_FILE):
         try:
             with open(CONTEXT_FILE, "r", encoding="utf-8") as f:
@@ -75,7 +69,6 @@ if "memory" not in st.session_state:
 # SYNTHETIC AUDIO & RADAR WAKE SCRIPTS
 # ==============================================================================
 def play_sfx_script(sfx_type):
-    """Generates synthetic Stark-tier web audio telemetry cues."""
     js_code = f"""
     <script>
     (function() {{
@@ -89,27 +82,19 @@ def play_sfx_script(sfx_type):
             
             if ('{sfx_type}' === 'online') {{
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
                 osc.start(now);
-                osc.stop(now + 0.3);
+                osc.stop(now + 0.35);
             }} else if ('{sfx_type}' === 'radar') {{
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(1150, now);
-                gain.gain.setValueAtTime(0.08, now);
+                osc.frequency.setValueAtTime(1400, now);
+                gain.gain.setValueAtTime(0.09, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                 osc.start(now);
                 osc.stop(now + 0.12);
-            }} else if ('{sfx_type}' === 'alert') {{
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.linearRampToValueAtTime(600, now + 0.2);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-                osc.start(now);
-                osc.stop(now + 0.25);
             }}
         }} catch(e) {{}}
     }})();
@@ -118,7 +103,6 @@ def play_sfx_script(sfx_type):
     components.html(js_code, height=0, width=0)
 
 def inject_wake_radar():
-    """Passive browser speech recognition wake listener."""
     radar_js = """
     <script>
     (function() {
@@ -156,16 +140,16 @@ def inject_wake_radar():
     components.html(radar_js, height=0, width=0)
 
 # ==============================================================================
-# ADVANCED STARK GLASS HUD STYLING
+# ORIGINAL ARIS INDUSTRIES // FULL TACTICAL STARK UI CSS
 # ==============================================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap');
 
 html, body, [data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at 50% 15%, #081220 0%, #040810 65%, #010306 100%) !important;
+    background: radial-gradient(circle at 50% 10%, #071526 0%, #030811 50%, #010307 100%) !important;
     font-family: 'Rajdhani', sans-serif;
-    color: #d1e8ff;
+    color: #c9e6ff;
     overflow-x: hidden;
 }
 
@@ -173,203 +157,239 @@ html, body, [data-testid="stAppViewContainer"] {
     background: transparent !important;
 }
 
-/* Glass Panels */
-.hud-glass-panel {
-    background: rgba(6, 17, 34, 0.72);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(0, 240, 255, 0.28);
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.08);
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin-bottom: 18px;
+[data-testid="stAppViewContainer"]::before {
+    content: " ";
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.aris-brand-box {
+    background: rgba(4, 14, 28, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.12), inset 0 0 20px rgba(0, 240, 255, 0.05);
+    border-radius: 6px;
+    padding: 18px 24px;
+    margin-bottom: 22px;
     position: relative;
+    backdrop-filter: blur(16px);
 }
 
-.hud-glass-panel::before {
-    content: '';
+.aris-brand-box::after {
+    content: "SYSTEM // LEVEL-5 SECURE";
     position: absolute;
-    top: 0; left: 0; width: 4px; height: 100%;
-    background: #00f0ff;
-    box-shadow: 0 0 12px #00f0ff;
-    border-radius: 10px 0 0 10px;
+    top: -10px; right: 24px;
+    background: #010814;
+    border: 1px solid #00f0ff;
+    color: #00f0ff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 2px 10px;
+    letter-spacing: 2px;
 }
 
-.core-title {
+.aris-main-title {
     font-family: 'Orbitron', sans-serif;
     color: #00f0ff;
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: 3px;
-    text-shadow: 0 0 15px rgba(0, 240, 255, 0.65);
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
     margin: 0;
 }
 
-.core-sub {
-    font-family: 'Rajdhani', sans-serif;
-    color: #7997b5;
-    font-size: 13px;
-    letter-spacing: 2px;
-    font-weight: 600;
+.aris-tagline {
+    font-family: 'Share Tech Mono', monospace;
+    color: #00ffa3;
+    font-size: 12px;
+    letter-spacing: 3px;
     text-transform: uppercase;
 }
 
-/* Gyro Arc Reactor HUD */
-.hud-gyro-wrapper {
+.arc-reactor {
     position: relative;
-    width: 65px;
-    height: 65px;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.hud-gyro-outer {
+.arc-inner-ring {
     position: absolute;
-    width: 62px;
-    height: 62px;
-    border: 2px dashed rgba(0, 240, 255, 0.45);
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    animation: gyroSpin 12s linear infinite;
+    border: 2px dashed #00ffa3;
+    animation: arcSpin 8s linear infinite;
 }
 
-.hud-gyro-inner {
-    width: 32px;
-    height: 32px;
+.arc-core-pulse {
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: radial-gradient(circle, #00f0ff 10%, rgba(0, 240, 255, 0.3) 60%, transparent 90%);
-    box-shadow: 0 0 20px #00f0ff;
+    background: radial-gradient(circle, #ffffff 0%, #00f0ff 60%, transparent 100%);
+    box-shadow: 0 0 20px #00f0ff, 0 0 35px #00f0ff;
+    animation: corePulse 2s ease-in-out infinite alternate;
 }
 
-@keyframes gyroSpin {
+@keyframes arcSpin {
+    0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-/* Chat Messages HUD */
+@keyframes corePulse {
+    0% { transform: scale(0.85); opacity: 0.8; }
+    100% { transform: scale(1.15); opacity: 1; }
+}
+
+.telemetry-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.telemetry-pill {
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    padding: 3px 12px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #7ce8ff;
+    letter-spacing: 1px;
+}
+
 .stChatMessage {
-    background: rgba(5, 14, 28, 0.75) !important;
-    border: 1px solid rgba(0, 240, 255, 0.18) !important;
-    border-radius: 8px !important;
-    margin-bottom: 12px !important;
+    background: rgba(3, 11, 24, 0.82) !important;
+    border: 1px solid rgba(0, 240, 255, 0.2) !important;
+    border-left: 4px solid #00f0ff !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+    margin-bottom: 14px !important;
 }
 
-.stChatMessage [data-testid="stChatMessageAvatarUser"] {
-    background: #00f0ff !important;
-    color: #050a14 !important;
-}
-
-.stChatMessage [data-testid="stChatMessageAvatarAssistant"] {
-    background: #0088cc !important;
-}
-
-/* Inputs & Buttons */
-.stTextInput input, .stChatInput textarea {
-    background: rgba(4, 11, 22, 0.85) !important;
-    border: 1px solid rgba(0, 240, 255, 0.35) !important;
+.stChatInput textarea, .stTextInput input {
+    background: rgba(2, 8, 18, 0.9) !important;
+    border: 1px solid rgba(0, 240, 255, 0.4) !important;
     color: #00f0ff !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-size: 16px !important;
+    font-family: 'Share Tech Mono', monospace !important;
 }
 
 .stButton button {
-    background: rgba(0, 240, 255, 0.08) !important;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(0, 255, 163, 0.08) 100%) !important;
     color: #00f0ff !important;
     border: 1px solid #00f0ff !important;
     border-radius: 4px !important;
     font-family: 'Orbitron', sans-serif !important;
     font-size: 11px !important;
-    letter-spacing: 1.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 2px !important;
     transition: all 0.25s ease !important;
 }
 
 .stButton button:hover {
     background: #00f0ff !important;
-    color: #040810 !important;
-    box-shadow: 0 0 16px #00f0ff !important;
-}
-
-/* Telemetry Badge */
-.telemetry-chip {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: #00f0ff;
-    background: rgba(0, 240, 255, 0.1);
-    border: 1px solid rgba(0, 240, 255, 0.3);
-    padding: 3px 8px;
-    border-radius: 4px;
-    display: inline-block;
+    color: #01050d !important;
+    box-shadow: 0 0 20px #00f0ff, 0 0 35px rgba(0, 240, 255, 0.6) !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# GROQ CLOUD ENGINE & DYNAMIC MODEL DISCOVERY
+# GROQ CLOUD ENGINE & RESILIENT MODEL CALLER
 # ==============================================================================
 api_key = os.environ.get("GROQ_API_KEY")
 if not api_key and "GROQ_API_KEY" in st.secrets:
     api_key = st.secrets["GROQ_API_KEY"]
 
 if not api_key:
-    st.error("GROQ_API_KEY REQUIRED: Set it in Windows environment variables or Streamlit Secrets.")
+    st.error("GROQ_API_KEY REQUIRED: Set in environment or Streamlit Secrets.")
     st.stop()
 
 client = Groq(api_key=api_key)
 
-CANDIDATE_MODELS = [
+# Fail-Safe Auto-Switch Models to prevent 404 Model Not Found
+FALLBACK_MODELS = [
     "llama-3.3-70b-versatile",
-    "llama-3.1-70b-versatile",
     "llama-3.1-8b-instant",
     "mixtral-8x7b-32768"
 ]
 
-def discover_groq_model():
-    try:
-        remote_models = client.models.list()
-        active_ids = [m.id for m in remote_models.data]
-        for candidate in CANDIDATE_MODELS:
-            if candidate in active_ids:
-                return candidate
-    except Exception:
-        pass
-    return "llama-3.3-70b-versatile"
-
-CURRENT_MODEL = discover_groq_model()
+def query_groq_resilient(chat_payload):
+    last_error = None
+    for model_name in FALLBACK_MODELS:
+        try:
+            res = client.chat.completions.create(
+                model=model_name,
+                messages=chat_payload,
+                temperature=0.3,
+                max_tokens=1800
+            )
+            return res.choices[0].message.content, model_name
+        except Exception as err:
+            err_msg = str(err).lower()
+            if "model_not_found" in err_msg or "404" in err_msg or "does not exist" in err_msg:
+                last_error = err
+                continue
+            raise err
+    return f"[TELEMETRY DISTORTION]: {str(last_error)}", "OFFLINE"
 
 # ==============================================================================
-# HUD TOP DECK TELEMETRY
+# ARIS INDUSTRIES // ARC REACTOR HUD TOP DECK
 # ==============================================================================
-col_head1, col_head2, col_head3 = st.columns([1, 6, 2])
-with col_head1:
+col_reactor, col_brand, col_actions = st.columns([1, 6, 2])
+
+with col_reactor:
     st.markdown("""
-    <div class="hud-gyro-wrapper">
-        <div class="hud-gyro-outer"></div>
-        <div class="hud-gyro-inner"></div>
+    <div class="arc-reactor">
+        <div class="arc-inner-ring"></div>
+        <div class="arc-core-pulse"></div>
     </div>
     """, unsafe_allow_html=True)
 
-with col_head2:
-    st.markdown('<div class="core-title">ARIS // APEX COMMAND MATRIX</div>', unsafe_allow_html=True)
-    mode_status = "LOCAL HARDWARE CONTROLLER ACTIVE" if system_controller else "STREAMLIT CLOUD ADVISOR"
-    dossier_status = "ENGAGED" if os.path.exists(CONTEXT_FILE) else "DEFAULT"
-    st.markdown(
-        f'<div class="core-sub">COGNITIVE CORE: {CURRENT_MODEL} | STATUS: {mode_status} | DOSSIER: {dossier_status}</div>',
-        unsafe_allow_html=True
-    )
+with col_brand:
+    st.markdown("""
+    <div class="aris-brand-box">
+        <div class="aris-main-title">ARIS INDUSTRIES // APEX MATRIX</div>
+        <div class="aris-tagline">AUTONOMOUS RECONNAISSANCE & INTELLIGENCE SYSTEM</div>
+    """, unsafe_allow_html=True)
+    
+    mode_text = "HARDWARE INTEGRATION ACTIVE" if system_controller else "STRATEGIC CLOUD PROTOCOL"
+    dossier_text = "LOCKED & ENGAGED" if os.path.exists(CONTEXT_FILE) else "DEFAULT IDENTITY"
+    
+    st.markdown(f"""
+        <div class="telemetry-row">
+            <span class="telemetry-pill">ARCHITECT: COMMANDER MAYANK</span>
+            <span class="telemetry-pill">CORE: LLAMA-3.3-70B / 8B AUTO-PILOT</span>
+            <span class="telemetry-pill">STATUS: {mode_text}</span>
+            <span class="telemetry-pill">DOSSIER: {dossier_text}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-with col_head3:
-    if st.button("PURGE TELEMETRY", use_container_width=True):
+with col_actions:
+    if st.button("PURGE BUFFER", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
 inject_wake_radar()
 
 # ==============================================================================
-# SESSION STATE & SPEECH ENGINE
+# CHAT LOGS & AUDIO PLAYBACK
 # ==============================================================================
 if "messages" not in st.session_state:
     st.session_state.messages = [{
         "role": "assistant",
-        "content": "Commander Mayank, consider me your steadfast tactical companion—always ready to assist, strategize, and keep the mission on track. How can I amplify our operational edge today?"
+        "content": "Commander Mayank, ARIS Industries Tactical Matrix is fully initialized. Systems nominal, dossier synced, ready for mission directives."
     }]
     play_sfx_script('online')
 
@@ -377,7 +397,7 @@ for idx, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if msg["role"] == "assistant":
-            if st.button("🔊 LISTEN BRIEF", key=f"tts_btn_{idx}"):
+            if st.button("🔊 AUDIO SYNTHESIS", key=f"speak_{idx}"):
                 sanitized_brief = msg["content"].replace('"', '').replace("'", "").replace('\n', ' ')
                 speech_script = f"""
                 <script>
@@ -393,13 +413,11 @@ for idx, msg in enumerate(st.session_state.messages):
                 components.html(speech_script, height=0, width=0)
 
 # ==============================================================================
-# PHYSICAL WINDOWS HARDWARE DISPATCHER
+# PHYSICAL WINDOWS CONTROLLER INTERCEPT
 # ==============================================================================
 def intercept_hardware_action(command_str):
-    """Executes physical OS operations if running locally."""
     if not system_controller:
         return None
-    
     cmd = command_str.lower().strip()
     if "open notepad" in cmd:
         return system_controller.open_app("notepad")
@@ -424,10 +442,9 @@ def intercept_hardware_action(command_str):
     return None
 
 # ==============================================================================
-# SATELLITE SEARCH RADAR (SAFE FALLBACK)
+# REAL-TIME SATELLITE SEARCH
 # ==============================================================================
 def search_radar_intel(query_text):
-    """Fetches real-time intelligence via DuckDuckGo without crashing if unavailable."""
     if not DDGS:
         return ""
     q = query_text.lower()
@@ -444,18 +461,18 @@ def search_radar_intel(query_text):
     return ""
 
 # ==============================================================================
-# ARIS NEURAL COGNITION RUNTIME
+# ARIS NEURAL REASONING ENGINE
 # ==============================================================================
 def run_aris_core(query):
-    # 1. Check physical hardware execution intercept
+    # 1. Local Hardware execution check
     hw_res = intercept_hardware_action(query)
     if hw_res:
         return f"[HARDWARE EXECUTION CONFIRMED]\nAction executed on local hardware matrix: {hw_res}"
 
-    # 2. Retrieve live satellite search intel
+    # 2. Live satellite radar lookup
     live_intel = search_radar_intel(query)
 
-    # 3. Retrieve persistent personal dossier & family nexus
+    # 3. Permanent Personal Dossier & Family Nexus Injection
     personal_dossier = load_personal_context()
     dossier_section = f"\n[PERMANENT COMMANDER DOSSIER & FAMILY NEXUS]:\n{personal_dossier}\n" if personal_dossier else ""
 
@@ -467,16 +484,12 @@ You are ARIS, the apex tactical AI lieutenant and co-pilot built exclusively for
 TEMPORAL ANCHOR: Current timestamp is {timestamp_now}.
 {live_intel}
 
-OPERATIONAL PROTOCOLS & CORE LOGIC:
-1. Recognize Commander Mayank as your sole architect, genius theoretical physicist, and first-principles polymath.
-2. Revere and respect the Family Nexus whenever referenced:
-   - Neeraj Tiwari (Father)
-   - Baby Tiwari (Mother)
-   - Palak Tiwari (Sister)
-   - Janvi Tiwari (Wife)
-3. For academic, physics, and mathematical challenges, apply uncompromising first-principles derivations (Irodov / Krotov tier).
-4. Tone: Stark-tier, confident, sharp, tactical, zero robotic fluff.
-5. Provide decisive, highly articulate operational guidance.
+OPERATIONAL PROTOCOLS & CORE IDENTITY:
+1. Always address Commander Mayank with absolute tactical precision, loyalty, and unwavering confidence.
+2. Cognitive Identity: Commander Mayank is a Genius Theoretical Physicist & First-Principles Polymath specializing in advanced mechanics, quantum logic, and electrodynamics.
+3. Family Nexus: Recognize and revere Neeraj Tiwari (Father), Baby Tiwari (Mother), Palak Tiwari (Sister), and Janvi Tiwari (Wife) whenever referenced.
+4. Academic and Physics Directives: Provide uncompromising, rigorous first-principles derivations with mathematical elegance (Irodov / Krotov tier).
+5. Tone: Stark Industries apex AI—sharp, concise, decisive, authoritative, zero conversational fluff.
 """
 
     chat_payload = [{"role": "system", "content": system_prompt}]
@@ -484,21 +497,13 @@ OPERATIONAL PROTOCOLS & CORE LOGIC:
         chat_payload.append({"role": m["role"], "content": m["content"]})
     chat_payload.append({"role": "user", "content": query})
 
-    try:
-        response = client.chat.completions.create(
-            model=CURRENT_MODEL,
-            messages=chat_payload,
-            temperature=0.3,
-            max_tokens=1800
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"[TELEMETRY DISTORTION]: {str(e)}"
+    reply_content, used_model = query_groq_resilient(chat_payload)
+    return reply_content
 
 # ==============================================================================
-# REAL-TIME CHAT COMMAND INTERFACE
+# COMMAND BAR EXECUTION
 # ==============================================================================
-user_command = st.chat_input("Command ARIS Matrix, Boss...")
+user_command = st.chat_input("Command ARIS Industries Matrix, Boss...")
 
 if user_command:
     play_sfx_script('radar')
