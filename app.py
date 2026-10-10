@@ -1,17 +1,29 @@
 import streamlit as st
 import os
+import sys
 import json
+import time
 from datetime import datetime
-from groq import Groq
-from duckduckgo_search import DDGS
 import streamlit.components.v1 as components
 
-# Import local system controller if running locally
+# Safe Import: DuckDuckGo Search (Prevents Streamlit Cloud Crash if missing)
+try:
+    from duckduckgo_search import DDGS
+except ImportError:
+    DDGS = None
+
+# Safe Import: Local System Controller (for Windows OS Automation)
 try:
     import system_controller
 except ImportError:
     system_controller = None
 
+# Groq Cloud SDK
+from groq import Groq
+
+# ==============================================================================
+# CONFIGURATION & PAGE LAYOUT
+# ==============================================================================
 st.set_page_config(
     page_title="ARIS // APEX COMMAND MATRIX",
     page_icon="⚡",
@@ -19,11 +31,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- MEMORY & DOSSIER RETRIEVAL CORE ---
+# ==============================================================================
+# KNOWLEDGE BASE & PERSISTENT MEMORY MODULES
+# ==============================================================================
 MEMORY_FILE = "aris_memory.json"
 CONTEXT_FILE = "personal_context.txt"
 
 def load_longterm_memory():
+    """Loads persistent interaction memory from JSON store."""
     if os.path.exists(MEMORY_FILE):
         try:
             with open(MEMORY_FILE, "r", encoding="utf-8") as f:
@@ -33,6 +48,7 @@ def load_longterm_memory():
     return {}
 
 def save_longterm_memory(data):
+    """Saves updated memory states to JSON store."""
     try:
         with open(MEMORY_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
@@ -40,7 +56,10 @@ def save_longterm_memory(data):
         pass
 
 def load_personal_context():
-    """Reads permanent personal dossier & family nexus from personal_context.txt"""
+    """
+    Loads Commander Mayank's apex personal dossier and family nexus
+    directly from personal_context.txt.
+    """
     if os.path.exists(CONTEXT_FILE):
         try:
             with open(CONTEXT_FILE, "r", encoding="utf-8") as f:
@@ -52,8 +71,11 @@ def load_personal_context():
 if "memory" not in st.session_state:
     st.session_state.memory = load_longterm_memory()
 
-# --- AUDIO & RADAR WAKE SCRIPTS ---
+# ==============================================================================
+# SYNTHETIC AUDIO & RADAR WAKE SCRIPTS
+# ==============================================================================
 def play_sfx_script(sfx_type):
+    """Generates synthetic Stark-tier web audio telemetry cues."""
     js_code = f"""
     <script>
     (function() {{
@@ -75,11 +97,19 @@ def play_sfx_script(sfx_type):
                 osc.stop(now + 0.3);
             }} else if ('{sfx_type}' === 'radar') {{
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.setValueAtTime(1150, now);
                 gain.gain.setValueAtTime(0.08, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                 osc.start(now);
-                osc.stop(now + 0.1);
+                osc.stop(now + 0.12);
+            }} else if ('{sfx_type}' === 'alert') {{
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
             }}
         }} catch(e) {{}}
     }})();
@@ -88,6 +118,7 @@ def play_sfx_script(sfx_type):
     components.html(js_code, height=0, width=0)
 
 def inject_wake_radar():
+    """Passive browser speech recognition wake listener."""
     radar_js = """
     <script>
     (function() {
@@ -124,15 +155,17 @@ def inject_wake_radar():
     """
     components.html(radar_js, height=0, width=0)
 
-# --- STYLING (GLASS HUD STARK INTERFACE) ---
+# ==============================================================================
+# ADVANCED STARK GLASS HUD STYLING
+# ==============================================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
 html, body, [data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at 50% 20%, #0d1b2a 0%, #050a14 70%, #020408 100%) !important;
+    background: radial-gradient(circle at 50% 15%, #081220 0%, #040810 65%, #010306 100%) !important;
     font-family: 'Rajdhani', sans-serif;
-    color: #e2f1ff;
+    color: #d1e8ff;
     overflow-x: hidden;
 }
 
@@ -140,148 +173,199 @@ html, body, [data-testid="stAppViewContainer"] {
     background: transparent !important;
 }
 
+/* Glass Panels */
 .hud-glass-panel {
-    background: rgba(10, 25, 47, 0.65);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 240, 255, 0.25);
-    box-shadow: 0 0 25px rgba(0, 240, 255, 0.1);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 20px;
+    background: rgba(6, 17, 34, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.08);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 18px;
     position: relative;
 }
 
 .hud-glass-panel::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 6px; height: 100%;
+    top: 0; left: 0; width: 4px; height: 100%;
     background: #00f0ff;
-    box-shadow: 0 0 10px #00f0ff;
-    border-radius: 8px 0 0 8px;
+    box-shadow: 0 0 12px #00f0ff;
+    border-radius: 10px 0 0 10px;
 }
 
 .core-title {
     font-family: 'Orbitron', sans-serif;
     color: #00f0ff;
     font-size: 26px;
+    font-weight: 800;
     letter-spacing: 3px;
-    text-shadow: 0 0 12px rgba(0, 240, 255, 0.7);
+    text-shadow: 0 0 15px rgba(0, 240, 255, 0.65);
     margin: 0;
 }
 
 .core-sub {
     font-family: 'Rajdhani', sans-serif;
-    color: #8892b0;
+    color: #7997b5;
     font-size: 13px;
     letter-spacing: 2px;
+    font-weight: 600;
     text-transform: uppercase;
 }
 
-.hud-gyro-ring {
+/* Gyro Arc Reactor HUD */
+.hud-gyro-wrapper {
     position: relative;
-    width: 60px;
-    height: 60px;
-    border: 2px dashed rgba(0, 240, 255, 0.4);
-    border-radius: 50%;
-    animation: rotateRing 10s linear infinite;
+    width: 65px;
+    height: 65px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.hud-gyro-ring::after {
-    content: '';
+.hud-gyro-outer {
+    position: absolute;
+    width: 62px;
+    height: 62px;
+    border: 2px dashed rgba(0, 240, 255, 0.45);
+    border-radius: 50%;
+    animation: gyroSpin 12s linear infinite;
+}
+
+.hud-gyro-inner {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: radial-gradient(circle, #00f0ff 0%, transparent 80%);
-    box-shadow: 0 0 15px #00f0ff;
+    background: radial-gradient(circle, #00f0ff 10%, rgba(0, 240, 255, 0.3) 60%, transparent 90%);
+    box-shadow: 0 0 20px #00f0ff;
 }
 
-@keyframes rotateRing {
+@keyframes gyroSpin {
     100% { transform: rotate(360deg); }
 }
 
+/* Chat Messages HUD */
 .stChatMessage {
-    background: rgba(7, 18, 36, 0.7) !important;
-    border: 1px solid rgba(0, 240, 255, 0.15) !important;
-    border-radius: 6px !important;
+    background: rgba(5, 14, 28, 0.75) !important;
+    border: 1px solid rgba(0, 240, 255, 0.18) !important;
+    border-radius: 8px !important;
     margin-bottom: 12px !important;
 }
 
-.stTextInput input {
-    background: rgba(5, 12, 24, 0.8) !important;
-    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+.stChatMessage [data-testid="stChatMessageAvatarUser"] {
+    background: #00f0ff !important;
+    color: #050a14 !important;
+}
+
+.stChatMessage [data-testid="stChatMessageAvatarAssistant"] {
+    background: #0088cc !important;
+}
+
+/* Inputs & Buttons */
+.stTextInput input, .stChatInput textarea {
+    background: rgba(4, 11, 22, 0.85) !important;
+    border: 1px solid rgba(0, 240, 255, 0.35) !important;
     color: #00f0ff !important;
     font-family: 'Rajdhani', sans-serif !important;
     font-size: 16px !important;
 }
 
 .stButton button {
-    background: rgba(0, 240, 255, 0.1) !important;
+    background: rgba(0, 240, 255, 0.08) !important;
     color: #00f0ff !important;
     border: 1px solid #00f0ff !important;
     border-radius: 4px !important;
     font-family: 'Orbitron', sans-serif !important;
-    letter-spacing: 1px !important;
-    transition: all 0.2s ease !important;
+    font-size: 11px !important;
+    letter-spacing: 1.5px !important;
+    transition: all 0.25s ease !important;
 }
 
 .stButton button:hover {
     background: #00f0ff !important;
-    color: #050a14 !important;
-    box-shadow: 0 0 15px #00f0ff !important;
+    color: #040810 !important;
+    box-shadow: 0 0 16px #00f0ff !important;
+}
+
+/* Telemetry Badge */
+.telemetry-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #00f0ff;
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- GROQ CLIENT & MODEL SETUP ---
+# ==============================================================================
+# GROQ CLOUD ENGINE & DYNAMIC MODEL DISCOVERY
+# ==============================================================================
 api_key = os.environ.get("GROQ_API_KEY")
 if not api_key and "GROQ_API_KEY" in st.secrets:
     api_key = st.secrets["GROQ_API_KEY"]
 
 if not api_key:
-    st.error("GROQ_API_KEY NOT DETECTED. Provide it via local env var or Streamlit secrets.")
+    st.error("GROQ_API_KEY REQUIRED: Set it in Windows environment variables or Streamlit Secrets.")
     st.stop()
 
 client = Groq(api_key=api_key)
 
-AVAILABLE_MODELS = [
+CANDIDATE_MODELS = [
     "llama-3.3-70b-versatile",
     "llama-3.1-70b-versatile",
     "llama-3.1-8b-instant",
     "mixtral-8x7b-32768"
 ]
 
-def get_best_model():
+def discover_groq_model():
     try:
-        models = client.models.list()
-        active_ids = [m.id for m in models.data]
-        for candidate in AVAILABLE_MODELS:
+        remote_models = client.models.list()
+        active_ids = [m.id for m in remote_models.data]
+        for candidate in CANDIDATE_MODELS:
             if candidate in active_ids:
                 return candidate
     except Exception:
         pass
     return "llama-3.3-70b-versatile"
 
-CURRENT_MODEL = get_best_model()
+CURRENT_MODEL = discover_groq_model()
 
-# --- TOP HUD HEADER ---
+# ==============================================================================
+# HUD TOP DECK TELEMETRY
+# ==============================================================================
 col_head1, col_head2, col_head3 = st.columns([1, 6, 2])
 with col_head1:
-    st.markdown('<div class="hud-gyro-ring"></div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="hud-gyro-wrapper">
+        <div class="hud-gyro-outer"></div>
+        <div class="hud-gyro-inner"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
 with col_head2:
     st.markdown('<div class="core-title">ARIS // APEX COMMAND MATRIX</div>', unsafe_allow_html=True)
-    mode_text = "LOCAL HARDWARE ACTIVE" if system_controller else "CLOUD ADVISOR MODE"
-    st.markdown(f'<div class="core-sub">COGNITIVE CORE: {CURRENT_MODEL} | STATUS: {mode_text}</div>', unsafe_allow_html=True)
+    mode_status = "LOCAL HARDWARE CONTROLLER ACTIVE" if system_controller else "STREAMLIT CLOUD ADVISOR"
+    dossier_status = "ENGAGED" if os.path.exists(CONTEXT_FILE) else "DEFAULT"
+    st.markdown(
+        f'<div class="core-sub">COGNITIVE CORE: {CURRENT_MODEL} | STATUS: {mode_status} | DOSSIER: {dossier_status}</div>',
+        unsafe_allow_html=True
+    )
+
 with col_head3:
-    if st.button("CLEAR MATRIX", use_container_width=True):
+    if st.button("PURGE TELEMETRY", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
 inject_wake_radar()
 
-# --- CHAT STATE ---
+# ==============================================================================
+# SESSION STATE & SPEECH ENGINE
+# ==============================================================================
 if "messages" not in st.session_state:
     st.session_state.messages = [{
         "role": "assistant",
@@ -293,118 +377,139 @@ for idx, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if msg["role"] == "assistant":
-            if st.button("🔊 LISTEN BRIEF", key=f"speak_{idx}"):
-                cleaned_text = msg["content"].replace('"', '').replace("'", "").replace('\n', ' ')
-                tts_js = f"""
+            if st.button("🔊 LISTEN BRIEF", key=f"tts_btn_{idx}"):
+                sanitized_brief = msg["content"].replace('"', '').replace("'", "").replace('\n', ' ')
+                speech_script = f"""
                 <script>
                 (function() {{
                     window.speechSynthesis.cancel();
-                    const u = new SpeechSynthesisUtterance("{cleaned_text[:350]}");
-                    u.rate = 1.05;
-                    u.pitch = 0.95;
-                    window.speechSynthesis.speak(u);
+                    const ut = new SpeechSynthesisUtterance("{sanitized_brief[:400]}");
+                    ut.rate = 1.05;
+                    ut.pitch = 0.95;
+                    window.speechSynthesis.speak(ut);
                 }})();
                 </script>
                 """
-                components.html(tts_js, height=0, width=0)
+                components.html(speech_script, height=0, width=0)
 
-# --- SYSTEM CONTROLLER WRAPPER ---
-def dispatch_system_command(query):
+# ==============================================================================
+# PHYSICAL WINDOWS HARDWARE DISPATCHER
+# ==============================================================================
+def intercept_hardware_action(command_str):
+    """Executes physical OS operations if running locally."""
     if not system_controller:
         return None
-    q = query.lower().strip()
-    if "open notepad" in q:
+    
+    cmd = command_str.lower().strip()
+    if "open notepad" in cmd:
         return system_controller.open_app("notepad")
-    elif "open calculator" in q or "open calc" in q:
+    elif "open calculator" in cmd or "open calc" in cmd:
         return system_controller.open_app("calc")
-    elif "open chrome" in q:
+    elif "open chrome" in cmd:
         return system_controller.open_app("chrome")
-    elif "open terminal" in q or "open cmd" in q:
+    elif "open cmd" in cmd or "open terminal" in cmd:
         return system_controller.open_app("cmd")
-    elif "open youtube" in q:
+    elif "open youtube" in cmd:
         return system_controller.open_url("https://www.youtube.com")
-    elif "open google" in q:
+    elif "open google" in cmd:
         return system_controller.open_url("https://www.google.com")
-    elif "hardware status" in q or "laptop status" in q or "battery" in q:
+    elif any(s in cmd for s in ["hardware status", "battery", "ram status", "cpu status"]):
         return str(system_controller.get_system_status())
-    elif "volume up" in q:
+    elif "volume up" in cmd:
         return system_controller.change_volume("up")
-    elif "volume down" in q:
+    elif "volume down" in cmd:
         return system_controller.change_volume("down")
-    elif "mute volume" in q:
+    elif "mute volume" in cmd:
         return system_controller.change_volume("mute")
     return None
 
-# --- ARIS CORE COGNITIVE PIPELINE ---
-def run_aris_core(query):
-    # 1. Hardware Command Intercept
-    hw_result = dispatch_system_command(query)
-    if hw_result:
-        return f"[HARDWARE EXECUTION CONFIRMED]\nAction executed on local laptop: {hw_result}"
-
-    # 2. Web Search Verification if needed
-    q_low = query.lower()
-    search_context = ""
-    if any(k in q_low for k in ["news", "search", "latest", "price", "current", "weather"]):
+# ==============================================================================
+# SATELLITE SEARCH RADAR (SAFE FALLBACK)
+# ==============================================================================
+def search_radar_intel(query_text):
+    """Fetches real-time intelligence via DuckDuckGo without crashing if unavailable."""
+    if not DDGS:
+        return ""
+    q = query_text.lower()
+    if any(k in q for k in ["news", "search", "latest", "price", "current", "weather", "today"]):
         try:
             with DDGS() as ddgs:
-                results = list(ddgs.text(query, max_results=3))
+                results = list(ddgs.text(query_text, max_results=3))
                 if results:
-                    search_context = "\n[LIVE SATELLITE RADAR INTEL]:\n" + "\n".join(
+                    return "\n[LIVE SATELLITE RADAR INTEL]:\n" + "\n".join(
                         [f"- {r.get('title')}: {r.get('body')}" for r in results]
                     )
         except Exception:
-            pass
+            return ""
+    return ""
 
-    # 3. Load Permanent Personal Context & Dossier
+# ==============================================================================
+# ARIS NEURAL COGNITION RUNTIME
+# ==============================================================================
+def run_aris_core(query):
+    # 1. Check physical hardware execution intercept
+    hw_res = intercept_hardware_action(query)
+    if hw_res:
+        return f"[HARDWARE EXECUTION CONFIRMED]\nAction executed on local hardware matrix: {hw_res}"
+
+    # 2. Retrieve live satellite search intel
+    live_intel = search_radar_intel(query)
+
+    # 3. Retrieve persistent personal dossier & family nexus
     personal_dossier = load_personal_context()
-    dossier_block = f"\n[PERMANENT COMMANDER DOSSIER & FAMILY NEXUS]:\n{personal_dossier}\n" if personal_dossier else ""
+    dossier_section = f"\n[PERMANENT COMMANDER DOSSIER & FAMILY NEXUS]:\n{personal_dossier}\n" if personal_dossier else ""
 
     timestamp_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     system_prompt = f"""
-You are ARIS, the apex tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), founder of ARIS Industries.
-{dossier_block}
+You are ARIS, the apex tactical AI lieutenant and co-pilot built exclusively for Commander Mayank (Boss), founder and chief architect of ARIS Industries.
+{dossier_section}
 TEMPORAL ANCHOR: Current timestamp is {timestamp_now}.
-{search_context}
+{live_intel}
 
-OPERATIONAL PROTOCOLS:
-1. Always address Commander Mayank with utmost confidence, tactical precision, and loyalty.
-2. You know his full profile: Genius Theoretical Physicist & First-Principles Polymath specializing in advanced mechanics, electrodynamics, and quantum logic.
-3. Family Nexus: Recognize and revere Neeraj Tiwari (Father), Baby Tiwari (Mother), Palak Tiwari (Sister), and Janvi Tiwari (Wife) whenever relevant.
-4. When dealing with physics or mathematics, provide rigorous, first-principles derivations and uncompromising mathematical elegance.
-5. Keep your tone Stark-tier, razor-sharp, analytical, and direct. Zero fluff.
+OPERATIONAL PROTOCOLS & CORE LOGIC:
+1. Recognize Commander Mayank as your sole architect, genius theoretical physicist, and first-principles polymath.
+2. Revere and respect the Family Nexus whenever referenced:
+   - Neeraj Tiwari (Father)
+   - Baby Tiwari (Mother)
+   - Palak Tiwari (Sister)
+   - Janvi Tiwari (Wife)
+3. For academic, physics, and mathematical challenges, apply uncompromising first-principles derivations (Irodov / Krotov tier).
+4. Tone: Stark-tier, confident, sharp, tactical, zero robotic fluff.
+5. Provide decisive, highly articulate operational guidance.
 """
 
-    chat_history = [{"role": "system", "content": system_prompt}]
-    for m in st.session_state.messages[-6:]:
-        chat_history.append({"role": m["role"], "content": m["content"]})
-    chat_history.append({"role": "user", "content": query})
+    chat_payload = [{"role": "system", "content": system_prompt}]
+    for m in st.session_state.messages[-8:]:
+        chat_payload.append({"role": m["role"], "content": m["content"]})
+    chat_payload.append({"role": "user", "content": query})
 
     try:
         response = client.chat.completions.create(
             model=CURRENT_MODEL,
-            messages=chat_history,
+            messages=chat_payload,
             temperature=0.3,
-            max_tokens=1500
+            max_tokens=1800
         )
         return response.choices[0].message.content
     except Exception as e:
         return f"[TELEMETRY DISTORTION]: {str(e)}"
 
-# --- PROMPT INPUT EXECUTION ---
-user_query = st.chat_input("Command ARIS Matrix, Boss...")
+# ==============================================================================
+# REAL-TIME CHAT COMMAND INTERFACE
+# ==============================================================================
+user_command = st.chat_input("Command ARIS Matrix, Boss...")
 
-if user_query:
+if user_command:
     play_sfx_script('radar')
-    st.session_state.messages.append({"role": "user", "content": user_query})
+    st.session_state.messages.append({"role": "user", "content": user_command})
     with st.chat_message("user"):
-        st.markdown(user_query)
+        st.markdown(user_command)
 
     with st.chat_message("assistant"):
-        with st.spinner("Processing telemetry..."):
-            ans = run_aris_core(user_query)
-            st.markdown(ans)
-            st.session_state.messages.append({"role": "assistant", "content": ans})
+        with st.spinner("Processing telemetry & neural vectors..."):
+            reply = run_aris_core(user_command)
+            st.markdown(reply)
+            st.session_state.messages.append({"role": "assistant", "content": reply})
             play_sfx_script('online')
     st.rerun()
